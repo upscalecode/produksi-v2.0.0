@@ -4,7 +4,8 @@
 return [
     'host' => '127.0.0.1',
     'port' => '3306',
-    'name' => 'newproduksi', // Ganti dengan nama database hosting.
-    'user' => 'newproduksi', // Ganti dengan username database hosting.
-    'password' => '', // Isi password database hosting.
+    'name' => 'u493779344_Produksi', // Ganti dengan nama database hosting.
+    'user' => 'u493779344_produksiAbsh', // Ganti dengan username database hosting.
+    'password' => '@Produksi1980', // Isi password database hosting.
 ];
+
