@@ -6,6 +6,6 @@ return [
     'port' => '3306',
     'name' => 'u493779344_Produksi', // Ganti dengan nama database hosting.
     'user' => 'u493779344_produksiAbsh', // Ganti dengan username database hosting.
-    'password' => '@Produksi1980', // Isi password database hosting.
+    'password' => 'Arik1122334466', // Isi password database hosting.
 ];
 
