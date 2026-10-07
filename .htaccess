@@ -1,2 +1,10 @@
-# Configure the web server document root as public/.
-Require all denied
+# Support hosting where the project itself is the document root.
+Options -Indexes -MultiViews
+RewriteEngine On
+
+# Deny hidden files before forwarding requests to the public directory.
+RewriteRule (^|/)\. - [F,L]
+
+# Requests already forwarded to public/ use that directory's routing rules.
+RewriteRule ^public(?:/|$) - [L]
+RewriteRule ^(.*)$ public/$1 [L]

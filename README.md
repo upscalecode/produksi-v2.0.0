@@ -47,6 +47,24 @@ folder proyek. File `.env`, kode backend, arsip lama, dan alat CLI berada di lua
 folder publik. Gunakan HTTPS saat aplikasi diakses melalui jaringan produksi.
 Server bawaan `php -S` digunakan untuk pengembangan lokal.
 
+## Hostinger dengan root proyek di public_html
+
+Jika DocumentRoot tidak dapat diarahkan ke `public/`, unggah seluruh isi proyek
+ke `public_html`, termasuk `.htaccess` root dan `public/.htaccess`. `.htaccess`
+root mengarahkan semua permintaan ke `public/`, sehingga file backend dan
+konfigurasi di root tidak disajikan langsung. Pertahankan struktur folder;
+jangan hanya mengunggah halaman HTML di root proyek.
+
+Versi `.htaccess` root sebelumnya berisi `Require all denied` dan menghasilkan
+403 jika proyek diunggah langsung ke `public_html`. Ganti berkas tersebut dengan
+versi saat ini. Gunakan PHP 8.2+ dengan ekstensi yang disebutkan di atas, isi
+konfigurasi database di `koneksi.php`, lalu jalankan setup melalui CLI.
+
+Buka `/login.html` dan `/api/production?action=ping` untuk memeriksa halaman
+dan routing API. Jika 403 tetap muncul, periksa DocumentRoot domain serta
+permission file/folder melalui panel hosting. Jangan membuka akses file
+konfigurasi untuk mengatasi 403.
+
 ## Struktur
 
 - `public/`: delapan halaman HTML, CSS, JavaScript, gambar, dan endpoint PHP.
