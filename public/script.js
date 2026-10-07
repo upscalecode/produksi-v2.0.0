@@ -799,7 +799,12 @@
     const trimmed = text.trim();
 
     if (!response.ok) {
-      throw new Error(`Server mengembalikan HTTP ${response.status}.`);
+      let failure;
+      try { failure = JSON.parse(trimmed); } catch (_) {}
+      const message = failure && typeof failure.message === "string"
+        ? failure.message
+        : `Server mengembalikan HTTP ${response.status}. Periksa error_log hosting.`;
+      throw new Error(message);
     }
     if (!trimmed) {
       throw new Error("API tidak mengembalikan data.");

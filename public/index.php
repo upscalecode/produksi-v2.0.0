@@ -22,6 +22,17 @@ try {
     $result = $controller(App\Request::capture());
 } catch (JsonException|DomainException $e) {
     $result = ['ok' => false, 'message' => $e instanceof JsonException ? 'Format data JSON tidak valid.' : $e->getMessage()];
+} catch (PDOException $e) {
+    error_log((string) $e); http_response_code(500);
+    $driverCode = (int) ($e->errorInfo[1] ?? 0);
+    $message = match ($driverCode) {
+        1044, 1045 => 'Akses MySQL ditolak. Periksa username, password, dan izin database pada koneksi.php atau DB_* di .env.',
+        1049 => 'Database MySQL tidak ditemukan. Periksa nama database pada koneksi.php atau DB_NAME di .env.',
+        2002, 2003, 2005 => 'Tidak dapat terhubung ke MySQL. Periksa host, port, dan status server database.',
+        1146, 1054 => 'Struktur database belum siap. Jalankan php bin/console.php setup menggunakan konfigurasi database hosting.',
+        default => 'Operasi MySQL gagal. Periksa log PHP hosting untuk detail penyebabnya.',
+    };
+    $result = ['ok' => false, 'message' => $message];
 } catch (Throwable $e) {
     error_log((string) $e); http_response_code(500);
     $result = ['ok' => false, 'message' => 'Server gagal memproses permintaan. Periksa konfigurasi MySQL dan log PHP.'];
