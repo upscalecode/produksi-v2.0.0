@@ -55,6 +55,19 @@ root mengarahkan semua permintaan ke `public/`, sehingga file backend dan
 konfigurasi di root tidak disajikan langsung. Pertahankan struktur folder;
 jangan hanya mengunggah halaman HTML di root proyek.
 
+Loader mencari `.env` di folder proyek terlebih dahulu, lalu di folder induknya.
+Jika proyek berada di `/home/user/domains/domain/public_html`, simpan `.env`
+di `/home/user/domains/domain/.env`. Jika ada `.env` di kedua lokasi, file di
+folder proyek dipakai. Environment server tetap diprioritaskan.
+Pastikan pengguna PHP dapat membaca file tersebut dan lokasi file diizinkan
+oleh pengaturan `open_basedir` hosting. Periksa lokasi yang dimuat tanpa
+menampilkan nilai konfigurasi melalui terminal hosting:
+
+```sh
+cd /home/user/domains/domain/public_html
+php bin/console.php env
+```
+
 Versi `.htaccess` root sebelumnya berisi `Require all denied` dan menghasilkan
 403 jika proyek diunggah langsung ke `public_html`. Ganti berkas tersebut dengan
 versi saat ini. Gunakan PHP 8.2+ dengan ekstensi yang disebutkan di atas, isi

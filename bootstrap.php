@@ -7,8 +7,19 @@ spl_autoload_register(static function (string $class): void {
         if (is_file($file)) require $file;
     }
 });
-if (is_file(__DIR__.'/.env')) {
-    foreach (file(__DIR__.'/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+$envFile = null;
+// Support both a project outside the web root and a project in public_html.
+foreach ([__DIR__.'/.env', dirname(__DIR__).'/.env'] as $candidate) {
+    if (is_file($candidate)) {
+        $envFile = $candidate;
+        break;
+    }
+}
+if ($envFile !== null) {
+    $envLines = is_readable($envFile) ? file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : false;
+    if ($envLines === false) throw new RuntimeException('File .env ditemukan tetapi tidak dapat dibaca. Periksa permission dan open_basedir PHP hosting.');
+    foreach ($envLines as $line) {
+        $line = preg_replace('/^\xEF\xBB\xBF/', '', $line);
         $line = trim($line);
         if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) continue;
         [$key, $value] = explode('=', $line, 2);
@@ -18,6 +29,7 @@ if (is_file(__DIR__.'/.env')) {
         putenv($key.'='.$value);
     }
 }
+define('APP_ENV_FILE', $envFile);
 function timestamp(): string { return gmdate('Y-m-d\TH:i:s').'.000Z'; }
 function uuid(): string
 {

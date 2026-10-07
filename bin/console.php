@@ -6,6 +6,12 @@ use App\Services\Accounts;
 use App\Services\Records;
 try {
     switch ($argv[1] ?? 'help') {
+        case 'env':
+            echo APP_ENV_FILE !== null ? "File .env dimuat: ".APP_ENV_FILE."\n" : "File .env tidak ditemukan di folder proyek atau folder induknya.\n";
+            foreach (['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'] as $key) {
+                echo $key.': '.(getenv($key) !== false ? 'tersedia' : 'belum diatur')."\n";
+            }
+            break;
         case 'doctor':
             foreach (['pdo_mysql', 'mbstring', 'iconv'] as $extension) {
                 if (!extension_loaded($extension)) throw new DomainException("Ekstensi PHP $extension belum aktif.");
@@ -76,6 +82,6 @@ try {
         case 'import':
             exit((new App\ImportProduction())->run($argv[2] ?? '', in_array('--apply', $argv, true), new Records()));
         default:
-            echo "php bin/console.php doctor\nphp bin/console.php setup\nphp bin/console.php admin [username]\nphp bin/console.php reset-password [username]\nphp bin/console.php import snapshot.json [--apply]\n";
+            echo "php bin/console.php env\nphp bin/console.php doctor\nphp bin/console.php setup\nphp bin/console.php admin [username]\nphp bin/console.php reset-password [username]\nphp bin/console.php import snapshot.json [--apply]\n";
     }
 } catch (Throwable $e) { fwrite(STDERR, $e->getMessage()."\n"); exit(1); }
