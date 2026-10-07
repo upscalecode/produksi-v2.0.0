@@ -59,9 +59,23 @@ try {
                 (new Accounts())->add(['username' => $username, 'name' => 'Administrator', 'password' => $password, 'role' => 'superuser']);
             });
             echo "Administrator dibuat. Hapus ADMIN_PASSWORD dari .env setelah selesai.\n"; break;
+        case 'reset-password':
+            $username = mb_strtolower(trim($argv[2] ?? ''));
+            if ($username === '') throw new DomainException('Tentukan username: php bin/console.php reset-password [username].');
+            $password = getenv('USER_PASSWORD') ?: '';
+            if (strlen($password) < 12 || strlen($password) > 255) throw new DomainException('Isi USER_PASSWORD sepanjang 12–255 karakter di .env atau environment.');
+            DB::transaction(function () use ($username, $password) {
+                $row = DB::table('production_users')->where('username', $username)->lockForUpdate()->first();
+                if (!$row) throw new DomainException('User tidak ditemukan. Gunakan perintah admin untuk membuat administrator baru.');
+                if (!$row->active) throw new DomainException('Akun tidak aktif. Aktifkan akun melalui administrator sebelum reset password.');
+                DB::table('production_users')->where('username', $username)->update(['password' => password_hash($password, PASSWORD_DEFAULT)]);
+                DB::table('production_tokens')->where('username', $username)->delete();
+                DB::table('production_login_attempts')->where('id', 'production-login:'.hash('sha256', $username))->delete();
+            });
+            echo "Password diperbarui dan sesi lama dicabut. Hapus USER_PASSWORD dari .env setelah selesai.\n"; break;
         case 'import':
             exit((new App\ImportProduction())->run($argv[2] ?? '', in_array('--apply', $argv, true), new Records()));
         default:
-            echo "php bin/console.php doctor\nphp bin/console.php setup\nphp bin/console.php admin [username]\nphp bin/console.php import snapshot.json [--apply]\n";
+            echo "php bin/console.php doctor\nphp bin/console.php setup\nphp bin/console.php admin [username]\nphp bin/console.php reset-password [username]\nphp bin/console.php import snapshot.json [--apply]\n";
     }
 } catch (Throwable $e) { fwrite(STDERR, $e->getMessage()."\n"); exit(1); }

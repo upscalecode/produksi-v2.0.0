@@ -134,6 +134,27 @@ produksi yang sudah ada. Akun administrator yang sudah dibuat dipertahankan.
 Password dan sesi lama tidak dipindahkan; reset password akun hasil impor melalui
 Super User. Foto snapshot disimpan di MySQL dan referensinya dipetakan ulang.
 
+## Login ditolak di hosting
+
+Password MySQL pada `koneksi.php` digunakan untuk koneksi database, bukan untuk
+login aplikasi. Pesan `Username atau password salah.` berarti akun tidak
+ditemukan, tidak aktif, atau password tidak cocok. Password akun hasil impor
+tidak dipindahkan dari aplikasi lama.
+
+Dari terminal hosting, di root proyek, jalankan `php bin/console.php doctor`
+untuk memeriksa koneksi dan tabel. Untuk akun aktif yang sudah ada, isi sementara
+`USER_PASSWORD` di `.env` dengan password baru sepanjang 12–255 karakter, lalu:
+
+```sh
+php bin/console.php reset-password admin
+```
+
+Ganti `admin` dengan username akun. Perintah ini mencabut sesi lama dan menghapus
+batas percobaan login akun tersebut. Hapus `USER_PASSWORD` dari `.env` setelah
+selesai, lalu login dengan password baru. Akun tidak aktif tidak diaktifkan oleh
+perintah ini. Jika akun belum ada, gunakan perintah `admin` dengan
+`ADMIN_PASSWORD` sesuai petunjuk instalasi.
+
 ## Pengujian backend
 
 Konfigurasi database hosting dapat diisi pada `koneksi.php` di root proyek:
