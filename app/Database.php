@@ -11,13 +11,17 @@ final class Database
     public static function connection(): PDO
     {
         if (self::$connection === null) {
-            $host = getenv('DB_HOST') ?: '127.0.0.1';
-            $port = getenv('DB_PORT') ?: '3306';
-            $name = getenv('DB_NAME') ?: 'newproduksi';
+            $config = require dirname(__DIR__).'/koneksi.php';
+            $host = getenv('DB_HOST') ?: $config['host'];
+            $port = (string) (getenv('DB_PORT') ?: $config['port']);
+            $name = getenv('DB_NAME') ?: $config['name'];
+            $user = getenv('DB_USER') ?: $config['user'];
+            $password = getenv('DB_PASSWORD');
+            if ($password === false) $password = $config['password'];
             if (!preg_match('/^[a-zA-Z0-9_]+$/', $name) || !ctype_digit($port) || str_contains($host, ';')) {
                 throw new \RuntimeException('Konfigurasi MySQL tidak valid.');
             }
-            self::$connection = new PDO("mysql:host=$host;port=$port;dbname=$name;charset=utf8mb4", getenv('DB_USER') ?: 'newproduksi', getenv('DB_PASSWORD') ?: '', [
+            self::$connection = new PDO("mysql:host=$host;port=$port;dbname=$name;charset=utf8mb4", $user, $password, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ,
                 PDO::ATTR_EMULATE_PREPARES => false,

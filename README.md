@@ -108,6 +108,12 @@ Super User. Foto snapshot disimpan di MySQL dan referensinya dipetakan ulang.
 
 ## Pengujian backend
 
+Konfigurasi database hosting dapat diisi pada `koneksi.php` di root proyek:
+ubah `host`, `port`, `name`, `user`, dan `password` sesuai akun database hosting.
+`app/Database.php` membaca file ini otomatis. Nilai `DB_*` dari environment
+atau `.env` tetap diprioritaskan, termasuk password environment yang kosong.
+Simpan `koneksi.php` di luar folder `public/` dan jangan commit password asli.
+
 Gunakan database MySQL terpisah yang kosong, dengan nama berakhiran `_test`.
 Set `DB_NAME`, `DB_HOST`, `DB_PORT`, `DB_USER`, dan `DB_PASSWORD` di environment
 terminal untuk koneksi pengujian; environment mengalahkan konfigurasi `.env`.
