@@ -5,8 +5,8 @@ RewriteEngine On
 # Deny hidden files before forwarding requests to the public directory.
 RewriteRule (^|/)\. - [F,L]
 
-# Serve the home page directly, without relying on the hosting DirectoryIndex.
-RewriteRule ^$ public/index.html [L]
+# Open login from the domain root and correct the mistaken hosting-folder URL.
+RewriteRule ^(?:public_html/?)?$ /login.html [R=302,L]
 
 # Requests already forwarded to public/ use that directory's routing rules.
 RewriteRule ^public(?:/|$) - [L]

@@ -1,6 +1,8 @@
 Options -Indexes -MultiViews
 DirectoryIndex index.html
 RewriteEngine On
+# Also support deployments whose document root is this public directory.
+RewriteRule ^(?:public_html/?)?$ /login.html [R=302,L]
 RewriteCond %{HTTP:Authorization} .
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteRule (^|/)\. - [F]
