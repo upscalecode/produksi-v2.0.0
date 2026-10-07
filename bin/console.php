@@ -6,6 +6,32 @@ use App\Services\Accounts;
 use App\Services\Records;
 try {
     switch ($argv[1] ?? 'help') {
+        case 'doctor':
+            foreach (['pdo_mysql', 'mbstring', 'iconv'] as $extension) {
+                if (!extension_loaded($extension)) throw new DomainException("Ekstensi PHP $extension belum aktif.");
+            }
+            echo "Ekstensi PHP tersedia.\n";
+            try {
+                DB::run('SELECT 1');
+            } catch (PDOException $e) {
+                $code = (int) ($e->errorInfo[1] ?? 0);
+                throw new DomainException(match ($code) {
+                    1044, 1045 => 'Akses MySQL ditolak. Periksa user, password, dan izin database di koneksi.php atau DB_* di .env.',
+                    1049 => 'Database tidak ditemukan. Periksa nama database di koneksi.php atau DB_NAME di .env.',
+                    2002, 2003, 2005 => 'Koneksi MySQL gagal. Periksa host, port, dan status server database.',
+                    default => "Pemeriksaan koneksi MySQL gagal (kode $code). Periksa log PHP hosting.",
+                });
+            }
+            echo "Koneksi MySQL berhasil.\n";
+            $required = ['production_locks', 'production_users', 'production_tokens', 'production_login_attempts'];
+            $tables = DB::run('SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()')->fetchAll(PDO::FETCH_COLUMN);
+            $missing = array_diff($required, $tables);
+            if ($missing) throw new DomainException('Tabel login belum lengkap: '.implode(', ', $missing).'. Jalankan php bin/console.php setup.');
+            if (!DB::table('production_locks')->where('id', 1)->exists()) throw new DomainException('Baris pengunci belum tersedia. Jalankan php bin/console.php setup.');
+            echo "Tabel login tersedia.\n";
+            if (!DB::table('production_users')->where('active', true)->exists()) throw new DomainException('Belum ada akun aktif. Isi ADMIN_PASSWORD minimal 12 karakter lalu jalankan php bin/console.php admin.');
+            echo "Akun aktif tersedia. Jika login ditolak, periksa username/password dan pesan API login.\n";
+            break;
         case 'setup':
             foreach (explode(';', file_get_contents(dirname(__DIR__).'/database/schema.sql')) as $sql) {
                 if (trim($sql) !== '') DB::connection()->exec($sql);
@@ -36,6 +62,6 @@ try {
         case 'import':
             exit((new App\ImportProduction())->run($argv[2] ?? '', in_array('--apply', $argv, true), new Records()));
         default:
-            echo "php bin/console.php setup\nphp bin/console.php admin [username]\nphp bin/console.php import snapshot.json [--apply]\n";
+            echo "php bin/console.php doctor\nphp bin/console.php setup\nphp bin/console.php admin [username]\nphp bin/console.php import snapshot.json [--apply]\n";
     }
 } catch (Throwable $e) { fwrite(STDERR, $e->getMessage()."\n"); exit(1); }
