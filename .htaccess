@@ -1,0 +1,2 @@
+# Configure the web server document root as public/.
+Require all denied
