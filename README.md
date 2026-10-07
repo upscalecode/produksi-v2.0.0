@@ -67,6 +67,16 @@ konfigurasi untuk mengatasi 403.
 
 ## Struktur
 
+Jika login gagal, jalankan `php bin/console.php doctor` melalui terminal pada
+server tempat aplikasi berjalan. Perintah ini hanya membaca: memeriksa ekstensi
+PHP, koneksi MySQL, tabel login, baris pengunci, dan keberadaan akun aktif.
+Konfigurasi bawaan lokal belum tentu cocok dengan akun database hosting.
+Nilai `DB_*` di environment atau `.env` mengalahkan `koneksi.php`.
+Jika tabel belum lengkap, jalankan `php bin/console.php setup`. Jika belum ada
+akun aktif, isi `ADMIN_PASSWORD` lalu jalankan `php bin/console.php admin`,
+kemudian hapus `ADMIN_PASSWORD`. Jangan mengirim password atau isi konfigurasi
+database saat membagikan hasil pemeriksaan.
+
 - `public/`: delapan halaman HTML, CSS, JavaScript, gambar, dan endpoint PHP.
 - `app/Services/`: login, hak akses, SPK, Filling, Press, APD, dan saldo produksi.
 - `app/Database.php`: koneksi PDO dan kueri dengan parameter terikat.
