@@ -46,7 +46,7 @@
     PRESS_BALANCE_PAGE_SIZE: 10,
     DASHBOARD_PRIORITY_PAGE_SIZE: 6,
     DASHBOARD_PRESS_KPI_PAGE_SIZE: 7,
-    AUTOSAVE_INTERVAL_MS: 15 * 60 * 1000,
+    AUTOSAVE_INTERVAL_MS: 5 * 60 * 1000,
 
     // Ganti dengan URL deployment Web App terbaru yang berakhir /exec.
     WEB_APP_URL:

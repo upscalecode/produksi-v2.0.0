@@ -46,7 +46,7 @@
     PRESS_BALANCE_PAGE_SIZE: 10,
     DASHBOARD_PRIORITY_PAGE_SIZE: 6,
     DASHBOARD_PRESS_KPI_PAGE_SIZE: 7,
-    AUTOSAVE_INTERVAL_MS: 15 * 60 * 1000,
+    AUTOSAVE_INTERVAL_MS: 5 * 60 * 1000,
 
     // Endpoint backend MySQL pada origin aplikasi yang sama.
     WEB_APP_URL: "/api/production",
@@ -744,8 +744,15 @@
   function isValidWebAppUrl(url) {
     try {
       const parsed = new URL(url, window.location.href);
-      return parsed.origin === window.location.origin && parsed.pathname === "/api/production" && !parsed.search && !parsed.hash;
-    } catch (_) { return false; }
+      return (
+        parsed.origin === window.location.origin &&
+        parsed.pathname === "/api/production" &&
+        !parsed.search &&
+        !parsed.hash
+      );
+    } catch (_) {
+      return false;
+    }
   }
 
   function getWebhookUrl() {
@@ -800,10 +807,13 @@
 
     if (!response.ok) {
       let failure;
-      try { failure = JSON.parse(trimmed); } catch (_) {}
-      const message = failure && typeof failure.message === "string"
-        ? failure.message
-        : `Server mengembalikan HTTP ${response.status}. Periksa error_log hosting.`;
+      try {
+        failure = JSON.parse(trimmed);
+      } catch (_) {}
+      const message =
+        failure && typeof failure.message === "string"
+          ? failure.message
+          : `Server mengembalikan HTTP ${response.status}. Periksa error_log hosting.`;
       throw new Error(message);
     }
     if (!trimmed) {
@@ -823,9 +833,7 @@
     try {
       data = JSON.parse(trimmed);
     } catch (_) {
-      throw new Error(
-        "Respons API bukan JSON valid. Periksa log server.",
-      );
+      throw new Error("Respons API bukan JSON valid. Periksa log server.");
     }
 
     if (!data || data.ok !== true) {
@@ -4890,9 +4898,7 @@
         toast("Data APD di preview berhasil diperbarui.");
       } else {
         state.preview.apd.push(item);
-        toast(
-          "Data APD ditambahkan ke preview. Belum disimpan ke database.",
-        );
+        toast("Data APD ditambahkan ke preview. Belum disimpan ke database.");
       }
 
       state.pages.apd = 1;
