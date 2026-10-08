@@ -1730,10 +1730,10 @@
       } catch (_) {}
     }
     if (Array.isArray(data.entries)) state.entries = data.entries;
-    if (Array.isArray(data.reportEntries))
-      state.reportEntries = data.reportEntries;
-    else if (data.reportEntriesSameAsEntries && Array.isArray(data.entries))
+    if (data.reportEntriesSameAsEntries && Array.isArray(data.entries))
       state.reportEntries = data.entries;
+    else if (Array.isArray(data.reportEntries))
+      state.reportEntries = data.reportEntries;
     else if (Array.isArray(data.entries) && !state.reportEntries.length)
       state.reportEntries = data.entries;
     if (Array.isArray(data.adjustments)) state.adjustments = data.adjustments;
@@ -10805,7 +10805,11 @@
         showKpiLaporan([], period || { label: "—" }, "", false, type);
         return;
       }
-      showError("");
+      showError(
+        reports.length
+          ? ""
+          : `Tidak ada pengerjaan ${kpiTypeLabel(type)} yang cocok dengan filter karyawan pada ${period.label}.`,
+      );
       showKpiLaporan(reports, period, selectedOperator, false, type);
     }
 
@@ -10821,6 +10825,7 @@
       if (input) input.value = "";
       setKpiReportExportState(false);
       updateKpiLaporanTypeUi(el("lap-kpi-type")?.value || "filling");
+      selectAvailableKpiMonth();
       scheduleAutoPreview(0);
     });
     el("lap-kpi-operator")?.addEventListener("input", () =>
