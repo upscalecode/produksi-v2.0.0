@@ -41,4 +41,36 @@ for (const path of ['../public/script.js', '../script.js']) {
     const context = load({ entries, reportEntries: [], reportEntriesSameAsEntries: false });
     assert.equal(context.state.reportEntries.length, 0);
   });
+
+  test(`${path}: monthly production calculates and displays Filling and Press KPI`, () => {
+    const nodes = new Map();
+    const el = id => {
+      if (!nodes.has(id)) nodes.set(id, { value: '', dataset: {}, hidden: true, prepend() {}, setAttribute() {} });
+      return nodes.get(id);
+    };
+    el('lap-kpi-month').value = '2026-10';
+    const context = vm.createContext({
+      state: { reportEntries: entries.concat([{ ...entries[0], tab: 'press', totalQty: 3500 }]), apdEntries: [], settings: {}, currentUser: { role: 'superuser' } },
+      el,
+      qs: () => null,
+      qsa: () => [],
+      dashboardSetText: (id, value) => { el(id).textContent = value; },
+      document: { createElement: () => ({ setAttribute() {} }) },
+      esc: String,
+      nowIso: () => '2026-10-08T00:00:00Z',
+      todayStr: () => '2026-10-08',
+    });
+    vm.runInContext(source.slice(source.indexOf('  function dashboardDateParts('), source.indexOf('  function dashboardDateKey(')), context);
+    vm.runInContext(source.slice(source.indexOf('  function dashboardDateInPeriod('), source.indexOf('  function renderDashboardPressKpiLegacy(')), context);
+    vm.runInContext(source.slice(source.indexOf('  const KPI_VARIANT_DAILY_TARGETS'), source.indexOf('  function buildKpiLaporanPrintHtml(')), context);
+    for (const type of ['filling', 'press']) {
+      el('lap-kpi-type').value = type;
+      const data = context.collectKpiLaporanData();
+      assert.equal(data.reports.length, 1);
+      assert.equal(data.reports[0].operator, 'Operator A');
+      assert.equal(context.showKpiLaporan(data.reports, data.period, '', false, type), true);
+      assert.equal(el('lap-kpi-result').hidden, false);
+      assert.match(el('lap-kpi-cards').innerHTML, /Operator A/);
+    }
+  });
 }

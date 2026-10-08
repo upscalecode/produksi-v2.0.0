@@ -104,6 +104,20 @@ JavaScript lama hanya referensi perilaku aplikasi sebelumnya.
 
 ## Tabel seperti spreadsheet
 
+Jika Laporan Hasil Pengerjaan dan KPI tampil di lokal tetapi kosong di hosting,
+unggah `app/Http/Controllers/ProductionController.php`, `public/script.js`, dan
+halaman HTML di `public/` dari versi yang sama. Pertahankan `koneksi.php` dan
+`.env` hosting. API menyediakan `reportEntries` lengkap untuk akun berhak akses
+laporan, termasuk ketika dashboard memakai data yang sama, agar JavaScript lama
+tetap dapat membaca laporan. Halaman HTML memakai versi URL JavaScript terbaru
+untuk memperbarui cache browser. Jika ada cache CDN/hosting, bersihkan cache
+halaman HTML dan JavaScript setelah unggahan.
+
+Periksa apakah tabel Filling/Press di hosting berisi data tersimpan serta apakah
+bulan laporan sesuai tanggal data. Jika tabel tersebut juga kosong, periksa
+database yang dipakai hosting dan proses impor/migrasi; data lokal tidak otomatis
+tersalin ke hosting. Jangan membagikan token sesi atau isi konfigurasi database.
+
 Data aplikasi disimpan pada tabel terpisah dengan kolom data yang dapat dibaca
 langsung melalui database manager:
 

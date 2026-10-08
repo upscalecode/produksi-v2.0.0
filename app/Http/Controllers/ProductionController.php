@@ -88,7 +88,9 @@ class ProductionController
         return [
             'user' => $user, 'master' => $this->production->master(), 'settings' => $this->settings(),
             'entries' => array_values(array_filter($all, fn ($e) => $dashboard || $can($e['tab']))),
-            'reportEntries' => $reports && ! $same ? $all : [], 'reportEntriesSameAsEntries' => $same,
+            // Older deployed clients read reportEntries before checking the shared-data flag.
+            // Keep the report list populated even when the dashboard uses the same entries.
+            'reportEntries' => $reports ? $all : [], 'reportEntriesSameAsEntries' => $same,
             'adjustments' => $can('press') ? $this->records->all('adjustment') : [],
             'remainders' => $can('press') ? $this->production->model()['remainders'] : [],
             'spkEntries' => $dashboard || $can('spk') || $can('filling') || $can('press') || $can('spkReport') ? $this->records->all('spk') : [],
