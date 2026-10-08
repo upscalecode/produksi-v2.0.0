@@ -134,6 +134,25 @@ tanpa menimpa data; tabel tujuan yang baru dibuat tetap tersedia untuk pemeriksa
 
 ## Impor snapshot spreadsheet
 
+### Impor master dari CSV (phpMyAdmin)
+
+CSV master hanya membutuhkan `category,value`; kategori yang digunakan adalah
+`operator`, `produk`, dan `botol`. Contoh tersedia di `database/master-template.csv`.
+Gunakan nilai tidak kosong, maksimal 200 karakter, tanpa duplikat kategori/nama.
+Kolom `sequence` otomatis, `record_id` boleh kosong (NULL), dan `extra` otomatis `{}`.
+
+Untuk database lama, unggah kode aplikasi terbaru dan jalankan
+`database/master-csv-migration.sql` melalui tab SQL phpMyAdmin sebelum impor.
+Migrasi ini mempertahankan semua data lama. Untuk database baru gunakan setup biasa.
+
+Pilih tabel `production_master`, buka **Import**, pilih format **CSV**, separator
+koma, enclosure tanda kutip ganda, charset UTF-8, dan isi daftar kolom
+`category,value`. Lewati baris pertama (header); jika opsi tersebut tidak tersedia,
+hapus header dari salinan CSV sebelum impor. Jangan sertakan kolom teknis dalam CSV.
+Jika Excel menghasilkan separator titik koma, pilih separator `;` saat impor.
+Impor CSV langsung tidak memvalidasi kategori atau mencegah duplikat nama;
+periksa isi CSV dahulu. Data hasil impor dapat digunakan dan dihapus lewat aplikasi.
+
 Gunakan `tools/export-php.gs` di proyek Apps Script lama untuk menghasilkan
 snapshot JSON. Validasi dahulu, kemudian terapkan ke database produksi kosong:
 

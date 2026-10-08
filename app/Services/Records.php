@@ -65,12 +65,23 @@ class Records
 
     public function get(string $kind, string $id): ?array
     {
+        if ($kind === 'master') {
+            $row = $this->masterRow($id);
+            return $row ? $this->decode($kind, $row) : null;
+        }
         $row = DB::table($this->table($kind))->where('record_id', $id)->first();
         return $row ? $this->decode($kind, $row) : null;
     }
 
     public function put(string $kind, string $id, array $data): array
     {
+        if ($kind === 'master') {
+            $row = $this->masterRow($id);
+            $columns = ['category' => $data['category'], 'value' => trim($data['value'])];
+            if ($row) DB::table('production_master')->where('sequence', $row->sequence)->update($columns);
+            else DB::table('production_master')->insert($columns + ['record_id' => $id, 'extra' => '{}']);
+            return $data;
+        }
         $flat = $data;
         if ($kind === 'apd') {
             $flat = array_merge($data, $data['scores'] ?? []);
@@ -89,10 +100,31 @@ class Records
 
     public function delete(string $kind, string $id): void
     {
+        if ($kind === 'master') {
+            foreach (DB::table('production_master')->get() as $row) {
+                if ($this->masterId($row) === $id || $row->record_id === $id) {
+                    DB::table('production_master')->where('sequence', $row->sequence)->delete();
+                }
+            }
+            return;
+        }
         DB::table($this->table($kind))->where('record_id', $id)->delete();
     }
 
     public function clear(string $kind): int { return DB::table($this->table($kind))->delete(); }
+
+    private function masterId(object $row): string
+    {
+        return hash('sha256', $row->category.'|'.mb_strtolower(trim((string) $row->value)));
+    }
+
+    private function masterRow(string $id): ?object
+    {
+        foreach (DB::table('production_master')->orderBy('sequence')->get() as $row) {
+            if ($this->masterId($row) === $id || $row->record_id === $id) return $row;
+        }
+        return null;
+    }
 
     public function exists(): bool
     {
