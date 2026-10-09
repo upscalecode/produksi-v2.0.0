@@ -3734,7 +3734,7 @@
 
     const saveBtn = qs(".f-save-btn", section);
     if (saveBtn) {
-      saveBtn.addEventListener("click", async () => {
+      registerPreviewSave(saveBtn, line, async () => {
         const previewRows = [...(state.preview[line] || [])];
         if (!previewRows.length) {
           toast("Belum ada data preview.", true);
@@ -5063,7 +5063,7 @@
       }
     });
 
-    saveBtn?.addEventListener("click", async () => {
+    registerPreviewSave(saveBtn, "apd", async () => {
       const rows = [...(state.preview.apd || [])];
       if (!rows.length) return toast("Belum ada data APD di preview.", true);
       if (!canLevel("apd", "write"))

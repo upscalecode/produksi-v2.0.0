@@ -4,6 +4,9 @@ const vm = require('node:vm');
 
 async function check(file) {
   const source = fs.readFileSync(file, 'utf8');
+  assert.match(source, /registerPreviewSave\(saveBtn, line, async \(\) => \{\s*const previewRows/, 'Register the actual Filling and Press save handler');
+  assert.match(source, /registerPreviewSave\(saveBtn, "apd", async \(\) => \{\s*const rows/, 'Register the actual APD save handler');
+  assert.match(source, /registerPreviewSave\(el\("spkSaveButton"\), "spk",/, 'Register the actual SPK save handler');
   const registry = source.slice(source.indexOf('  const previewSaveHandlers'), source.indexOf('  let writeQueue'));
   const autosave = source.slice(source.indexOf('  let autosaveRunning'), source.indexOf('  async function preloadAppViews'));
   let tick;
