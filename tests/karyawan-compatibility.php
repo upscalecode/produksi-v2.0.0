@@ -45,6 +45,18 @@ namespace {
     $decode = new \ReflectionMethod(Records::class, 'decode');
     $row = (object)['category'=>'karyawan', 'value'=>'ARIK', 'departemen'=>'Produksi', 'jabatan'=>'Filling'];
     expect($decode->invoke(new Records(), 'master', $row)['category'] === 'operator', 'CSV category mapped to application category');
+    foreach ([null, '', '   ', '{}', '[]'] as $extra) {
+        $csvRow = (object)['category'=>'produk', 'value'=>'Produk CSV', 'extra'=>$extra];
+        expect($decode->invoke(new Records(), 'master', $csvRow)['value'] === 'Produk CSV', 'Empty CSV extra does not prevent reading master');
+    }
+    foreach (['broken-json', 'null', '123', '"text"'] as $extra) {
+        try {
+            $decode->invoke(new Records(), 'master', (object)['category'=>'produk', 'value'=>'Produk CSV', 'extra'=>$extra]);
+            throw new \RuntimeException('Malformed extra must be rejected');
+        } catch (\DomainException $e) {
+            expect(str_contains($e->getMessage(), 'production_master'), 'Invalid stored JSON identifies its table');
+        }
+    }
     $masterId = new \ReflectionMethod(Records::class, 'masterId');
     expect($masterId->invoke(new Records(), $row) === hash('sha256', 'operator|arik'), 'CSV record can be found for edit/delete');
     echo "Karyawan compatibility checks passed.\n";

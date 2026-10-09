@@ -58,7 +58,16 @@ class Records
 
     private function decode(string $kind, object $row): array
     {
-        $data = json_decode($row->extra ?? '{}', true, 512, JSON_THROW_ON_ERROR);
+        $extra = trim((string) ($row->extra ?? ''));
+        try {
+            $data = $extra === '' ? [] : json_decode($extra, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            error_log('Invalid extra JSON in '.$this->table($kind).' sequence '.($row->sequence ?? '?').': '.$e->getMessage());
+            throw new \DomainException('Data tambahan JSON pada tabel '.$this->table($kind).' baris '.($row->sequence ?? '?').' tidak valid. Periksa kolom extra pada database.');
+        }
+        if (!is_array($data)) {
+            throw new \DomainException('Kolom extra pada tabel '.$this->table($kind).' harus berupa objek atau daftar JSON.');
+        }
         foreach (self::fields($kind) as $name => $type) {
             $column = $name === 'operator' ? $this->employeeColumn($kind) : $name;
             if (($row->$column ?? null) === null) continue;
