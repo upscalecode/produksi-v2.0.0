@@ -165,6 +165,24 @@
 
   // Antrean tulis: UI tetap instan, request Spreadsheet dikirim satu per satu
   // agar input cepat berulang tidak saling berebut LockService di Apps Script.
+  const previewSaveHandlers = new Map();
+  const previewSavesRunning = new Set();
+
+  function registerPreviewSave(button, line, save) {
+    if (!button) return;
+    const handler = async () => {
+      if (previewSavesRunning.has(line) || !canLevel(line, "write")) return;
+      previewSavesRunning.add(line);
+      try {
+        await save();
+      } finally {
+        previewSavesRunning.delete(line);
+      }
+    };
+    previewSaveHandlers.set(line, handler);
+    button.addEventListener("click", handler);
+  }
+
   let writeQueue = Promise.resolve();
 
   function isWriteLockBusyError(error) {
@@ -7614,7 +7632,7 @@
       }
     });
 
-    el("spkSaveButton")?.addEventListener("click", async () => {
+    registerPreviewSave(el("spkSaveButton"), "spk", async () => {
       const rows = [...(state.preview.spk || [])];
       if (!rows.length) return;
       const saveButton = el("spkSaveButton");
@@ -12000,45 +12018,14 @@
 
       if (navigator.onLine === false) return;
 
-      const spkButton = el("spkSaveButton");
-      const fillingButton = qs("#view-filling .f-save-btn");
-      const apdButton = el("apdSaveBtn");
-
-      if (
-        canLevel("spk", "write") &&
-        state.preview.spk?.length &&
-        !spkButton?.disabled
-      ) {
-        spkButton?.click();
-      }
-      if (
-        canLevel("filling", "write") &&
-        state.preview.filling?.length &&
-        !fillingButton?.disabled
-      ) {
-        fillingButton?.click();
-      }
-      if (
-        canLevel("apd", "write") &&
-        state.preview.apd?.length &&
-        !apdButton?.disabled
-      ) {
-        apdButton?.click();
-      }
-
-      // Tunggu SPK/Filling/APD selesai. Press bergantung pada saldo Filling
-      // tersimpan sehingga tidak boleh dimulai dalam waktu yang bersamaan.
-      await writeQueue;
-
-      const pressButton = qs("#view-press .f-save-btn");
-      if (
-        state.preview.press?.length &&
-        !state.preview.filling?.length &&
-        canLevel("press", "write") &&
-        !pressButton?.disabled
-      ) {
-        pressButton?.click();
+      // Gunakan proses simpan yang sama dengan tombol, tanpa bergantung
+      // pada status tombol yang dapat nonaktif akibat filter tabel.
+      for (const line of ["spk", "filling", "apd", "press"]) {
+        if (!canLevel(line, "write") || !state.preview[line]?.length) continue;
+        if (line === "press" && state.preview.filling?.length) continue;
+        // Tunggu proses manual dan pembaruan state sebelum langkah berikutnya.
         await writeQueue;
+        await previewSaveHandlers.get(line)?.();
       }
     } catch (error) {
       console.warn(
@@ -12056,7 +12043,7 @@
     window.setInterval(runAutosave, CONFIG.AUTOSAVE_INTERVAL_MS);
     document.addEventListener("visibilitychange", () => {
       // Jika interval terlewat karena tab browser ditidurkan, jalankan saat
-      // pengguna kembali tanpa menunggu 15 menit berikutnya.
+      // pengguna kembali tanpa menunggu interval berikutnya.
       if (
         document.visibilityState === "visible" &&
         Date.now() - lastAutosaveAt >= CONFIG.AUTOSAVE_INTERVAL_MS
