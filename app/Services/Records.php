@@ -5,6 +5,20 @@ use App\Database as DB;
 /** Spreadsheet collections stored in separate tables with readable columns. */
 class Records
 {
+    private array $employeeColumns = [];
+
+    public static function masterCategory(string $category): string
+    {
+        return $category === 'karyawan' ? 'operator' : $category;
+    }
+
+    private function employeeColumn(string $kind): string
+    {
+        return $this->employeeColumns[$kind] ??= DB::run(
+            'SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name=?',
+            [$this->table($kind), 'karyawan']
+        )->fetchColumn() ? 'karyawan' : 'operator';
+    }
     public const TABLES = [
         'master' => 'production_master', 'entry' => 'production_entries',
         'spk' => 'production_spk', 'apd' => 'production_apd',
@@ -18,7 +32,7 @@ class Records
             'qtyKardus:f','qtyBotolPerKardus:f','totalQty:f','qtyBotolPecah:f','qtyKardusBasah:f',
             'createdBy','createdAt','updatedAt','updateCount:i','sisaPressTanggalAsal','keterangan'];
         $fields = match ($kind) {
-            'master' => ['category','value'],
+            'master' => ['category','value','departemen','jabatan'],
             'entry' => $entry,
             'audit' => [...$entry,'batchNo','key','nextUpdateCount:i','deletedBy','deletedAt','restoredEntryId','restoredAt','line'],
             'spk' => ['batchNo','tanggal','produk','botol','produksiDus:i','qtyPerDus:i','qty:f','createdBy','createdAt','updatedAt','updateCount:i','status'],
@@ -44,17 +58,19 @@ class Records
 
     private function decode(string $kind, object $row): array
     {
-        $data = json_decode($row->extra, true, 512, JSON_THROW_ON_ERROR);
+        $data = json_decode($row->extra ?? '{}', true, 512, JSON_THROW_ON_ERROR);
         foreach (self::fields($kind) as $name => $type) {
-            if ($row->$name === null) continue;
+            $column = $name === 'operator' ? $this->employeeColumn($kind) : $name;
+            if (($row->$column ?? null) === null) continue;
             $value = match ($type) {
-                'i' => (int) $row->$name, 'f' => (float) $row->$name,
-                'j' => json_decode($row->$name, true, 512, JSON_THROW_ON_ERROR),
-                default => $row->$name,
+                'i' => (int) $row->$column, 'f' => (float) $row->$column,
+                'j' => json_decode($row->$column, true, 512, JSON_THROW_ON_ERROR),
+                default => $row->$column,
             };
             if ($kind === 'apd' && array_key_exists($name, ApdService::WEIGHTS)) $data['scores'][$name] = $value;
             else $data[$name] = $value;
         }
+        if ($kind === 'master') $data['category'] = self::masterCategory($data['category']);
         return $data;
     }
 
@@ -78,6 +94,9 @@ class Records
         if ($kind === 'master') {
             $row = $this->masterRow($id);
             $columns = ['category' => $data['category'], 'value' => trim($data['value'])];
+            foreach (['departemen', 'jabatan'] as $field) {
+                if (array_key_exists($field, $data)) $columns[$field] = trim((string) $data[$field]);
+            }
             if ($row) DB::table('production_master')->where('sequence', $row->sequence)->update($columns);
             else DB::table('production_master')->insert($columns + ['record_id' => $id, 'extra' => '{}']);
             return $data;
@@ -90,7 +109,8 @@ class Records
         $columns = [];
         foreach (self::fields($kind) as $name => $type) {
             $value = $flat[$name] ?? null;
-            $columns[$name] = $value !== null && $type === 'j' ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
+            $column = $name === 'operator' ? $this->employeeColumn($kind) : $name;
+            $columns[$column] = $value !== null && $type === 'j' ? json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE) : $value;
             if ($value !== null) unset($flat[$name]);
         }
         $columns['extra'] = json_encode($flat, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
@@ -115,7 +135,7 @@ class Records
 
     private function masterId(object $row): string
     {
-        return hash('sha256', $row->category.'|'.mb_strtolower(trim((string) $row->value)));
+        return hash('sha256', self::masterCategory($row->category).'|'.mb_strtolower(trim((string) $row->value)));
     }
 
     private function masterRow(string $id): ?object

@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS `production_master` (
  record_id VARCHAR(191) NULL DEFAULT NULL UNIQUE,
  `category` TEXT NULL,
  `value` TEXT NULL,
- extra LONGTEXT NOT NULL DEFAULT '{}'
+ `departemen` VARCHAR(100) NULL,
+ `jabatan` VARCHAR(100) NULL,
+ extra LONGTEXT NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `production_entries` (
@@ -35,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `production_entries` (
  `reportId` TEXT NULL,
  `tab` TEXT NULL,
  `tanggal` TEXT NULL,
- `operator` TEXT NULL,
+ `karyawan` TEXT NULL,
  `produk` TEXT NULL,
  `botol` TEXT NULL,
  `botolPecahJenis` TEXT NULL,
@@ -76,7 +78,7 @@ CREATE TABLE IF NOT EXISTS `production_apd` (
  record_id VARCHAR(191) NOT NULL UNIQUE,
  `id` TEXT NULL,
  `tanggal` TEXT NULL,
- `operator` TEXT NULL,
+ `karyawan` TEXT NULL,
  `totalPoints` DOUBLE NULL,
  `percentage` DOUBLE NULL,
  `alasan` TEXT NULL,
@@ -120,7 +122,7 @@ CREATE TABLE IF NOT EXISTS `production_entry_audits` (
  `reportId` TEXT NULL,
  `tab` TEXT NULL,
  `tanggal` TEXT NULL,
- `operator` TEXT NULL,
+ `karyawan` TEXT NULL,
  `produk` TEXT NULL,
  `botol` TEXT NULL,
  `botolPecahJenis` TEXT NULL,

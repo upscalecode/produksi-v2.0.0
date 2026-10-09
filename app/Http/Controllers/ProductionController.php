@@ -195,9 +195,10 @@ class ProductionController
                 return [];
             case 'downtime.upsert': return $this->downtime($user, $this->data($r));
             case 'master.add':
+            case 'master.update':
             case 'master.remove':
                 Permissions::require($user, 'master');
-                $this->production->masterWrite((string) $r->input('category'), trim((string) $r->input('value')), $action === 'master.remove');
+                $this->production->masterWrite((string) $r->input('category'), trim((string) $r->input('value')), $action === 'master.remove', ['departemen' => $r->input('departemen'), 'jabatan' => $r->input('jabatan')], $action === 'master.update');
 
                 return ['master' => $this->production->master()];
             case 'settings.kpiTargets.set':

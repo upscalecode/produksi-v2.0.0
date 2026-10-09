@@ -1,4 +1,4 @@
-﻿# Newproduksi — PHP native + MySQL
+# Newproduksi — PHP native + MySQL
 
 Backend menggunakan PHP native dengan PDO MySQL, tanpa Laravel, framework lain,
 Composer, atau server Node.js. Tampilan HTML, CSS, JavaScript, dan aset tetap
@@ -104,6 +104,36 @@ JavaScript lama hanya referensi perilaku aplikasi sebelumnya.
 
 ## Tabel seperti spreadsheet
 
+### Departemen dan jabatan operator
+
+Master operator sekarang memiliki kolom `departemen` dan `jabatan` pada tabel
+`production_master`. Untuk database lama jalankan `php bin/console.php setup`;
+perintah ini dapat diulang dan mempertahankan data. Jika hosting tidak memiliki
+terminal, jalankan `database/operator-department-migration.sql` sekali melalui
+phpMyAdmin sebelum mengunggah kode aplikasi terbaru.
+
+Di **Setting → Data Master → Operator**, isi Departemen `Produksi` dan
+Jabatan / Bagian `Operator Filling` atau `Operator Press`. Klik **Edit** pada nama operator lama
+untuk melengkapi atau mengubah pembagiannya. Departemen `Filling` atau `Press`
+juga didukung dengan jabatan bebas, misalnya `Operator`.
+
+Pilihan operator pada form serta filter laporan/KPI mengikuti bagian yang dipilih.
+Server menolak penyimpanan operator ke bagian yang berbeda, termasuk permintaan
+batch. Operator dari departemen lain atau yang belum memiliki bagian produksi
+tidak muncul pada pilihan produksi. APD produksi menampilkan kedua bagian.
+Riwayat tersimpan tidak dihapus atau dipindahkan saat metadata operator diubah.
+
+Data lama tidak diberi departemen/jabatan secara otomatis karena pembagian nama
+belum diketahui. Lengkapi operator sebelum membuat pengerjaan baru. Ekspor master
+CSV dan impor snapshot JSON mempertahankan departemen serta jabatan. Snapshot
+lama tetap dapat diimpor, lalu operator dilengkapi melalui menu Master.
+
+Untuk CSV operator di phpMyAdmin, gunakan daftar kolom
+`category,value,departemen,jabatan` dan lewati header. Contoh tersedia pada
+`database/operator-template.csv`. Kolom `extra` kosong otomatis dibaca sebagai
+objek kosong, sehingga impor juga kompatibel dengan MySQL lokal yang tidak
+mendukung nilai bawaan pada kolom `LONGTEXT`.
+
 Jika Laporan Hasil Pengerjaan dan KPI tampil di lokal tetapi kosong di hosting,
 unggah `app/Http/Controllers/ProductionController.php`, `public/script.js`, dan
 halaman HTML di `public/` dari versi yang sama. Pertahankan `koneksi.php` dan
@@ -152,8 +182,16 @@ tanpa menimpa data; tabel tujuan yang baru dibuat tetap tersedia untuk pemeriksa
 
 CSV master hanya membutuhkan `category,value`; kategori yang digunakan adalah
 `operator`, `produk`, dan `botol`. Contoh tersedia di `database/master-template.csv`.
+Kategori `karyawan` juga diterima sebagai alias `operator`, termasuk untuk edit
+dan hapus melalui aplikasi. Contoh: `karyawan,ARIK,Produksi,Operator Filling` dengan
+header dan daftar kolom impor `category,value,departemen,jabatan`.
+Kolom laporan `karyawan` pada schema baru didukung; tabel lama dengan kolom
+`operator` tetap dapat digunakan. Mengedit `schema.sql` tidak mengubah tabel
+yang sudah ada karena setup menggunakan `CREATE TABLE IF NOT EXISTS`.
 Gunakan nilai tidak kosong, maksimal 200 karakter, tanpa duplikat kategori/nama.
-Kolom `sequence` otomatis, `record_id` boleh kosong (NULL), dan `extra` otomatis `{}`.
+Kolom `sequence` otomatis, `record_id` boleh kosong (NULL), dan `extra` kosong
+dibaca sebagai `{}`. Untuk operator sertakan departemen serta jabatan seperti
+contoh `database/operator-template.csv`, atau lengkapi melalui menu Master.
 
 Untuk database lama, unggah kode aplikasi terbaru dan jalankan
 `database/master-csv-migration.sql` melalui tab SQL phpMyAdmin sebelum impor.

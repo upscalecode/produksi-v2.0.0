@@ -34,6 +34,15 @@ class ImportProduction {
                 'users.*.role' => 'required|in:user,superuser', 'users.*.permissions' => 'present|array',
                 'photos.*.id' => 'required|string', 'photos.*.owner' => 'required|string|max:100',
             ]);
+            $operatorDetails = [];
+            foreach ($data['master']['operatorDetails'] ?? [] as $row) {
+                Permissions::check(is_array($row), 'Detail operator tidak valid.');
+                Validation::check($row, ['value' => 'required|string|max:200', 'departemen' => 'present|string|max:100', 'jabatan' => 'present|string|max:100']);
+                $key = mb_strtolower(trim($row['value']));
+                Permissions::check(!isset($operatorDetails[$key]), 'Detail operator duplikat.');
+                Permissions::check(in_array($key, array_map(fn($name) => mb_strtolower(trim($name)), $data['master']['operator']), true), 'Detail operator tidak terdaftar pada master.');
+                $operatorDetails[$key] = ['departemen' => trim($row['departemen']), 'jabatan' => trim($row['jabatan'])];
+            }
             $map = ['entries' => ['entry', 'id'], 'spkEntries' => ['spk', 'batchNo'], 'apdEntries' => ['apd', 'id'], 'adjustments' => ['adjustment', 'id'], 'downtimeEntries' => ['downtime', 'tanggal'], 'audits' => ['audit', 'id']];
             $photoMap = [];
             foreach ($data['photos'] as $photo) {
@@ -82,12 +91,13 @@ class ImportProduction {
 
                 return 0;
             }
-            DB::transaction(function () use ($data, $map, $photoMap, $records) {
+            DB::transaction(function () use ($data, $map, $photoMap, $records, $operatorDetails) {
                 DB::table('production_locks')->where('id', 1)->lockForUpdate()->first();
                 Permissions::check(! $records->exists() && ! DB::table('production_photos')->exists(), 'Impor hanya diizinkan pada database produksi kosong; data yang ada tidak akan ditimpa.');
                 foreach (['operator', 'produk', 'botol'] as $category) {
                     foreach ($data['master'][$category] ?? [] as $value) {
-                        $records->put('master', hash('sha256', $category.'|'.mb_strtolower(trim($value))), ['category' => $category, 'value' => trim($value)]);
+                        $details = $category === 'operator' ? ($operatorDetails[mb_strtolower(trim($value))] ?? []) : [];
+                        $records->put('master', hash('sha256', $category.'|'.mb_strtolower(trim($value))), ['category' => $category, 'value' => trim($value)] + $details);
                     }
                 }
                 $records->put('settings', 'kpi', $data['settings']);

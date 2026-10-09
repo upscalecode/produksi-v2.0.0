@@ -1129,6 +1129,86 @@ button {
 .chip-add .btn {
   padding: 6px 12px;
 }
+.chip-add.operator-master-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) repeat(2, minmax(0, 1fr)) auto;
+  gap: 6px;
+  align-items: end;
+}
+.operator-master-editor > input {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+.operator-master-editor > .btn {
+  grid-column: 4;
+  grid-row: 1;
+}
+.operator-master-editor > label {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  font-size: 12px;
+  grid-row: 1;
+}
+.operator-master-editor > label:first-of-type {
+  grid-column: 2;
+}
+.operator-master-editor > label:last-of-type {
+  grid-column: 3;
+}
+.operator-master-editor label input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.operator-master-editor > small {
+  grid-column: 1 / -1;
+}
+.operator-master-editor > [data-cancel-operator] {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  justify-self: start;
+}
+@media (max-width: 600px) {
+  .chip-add.operator-master-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  }
+  .operator-master-editor > input {
+    grid-column: 1 / 3;
+  }
+  .operator-master-editor > .btn {
+    grid-column: 3;
+  }
+  .operator-master-editor > label:first-of-type {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .operator-master-editor > label:last-of-type {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+  .operator-master-editor > [data-cancel-operator] {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+}
+.operator-master-editor small,
+.chip-list[data-cat="operator"] .chip small {
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+.chip-list[data-cat="operator"] .chip {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.chip-list[data-cat="operator"] .chip small {
+  flex-basis: 100%;
+}
+.chip-list[data-cat="operator"] .chip button[data-action="edit"] {
+  width: auto;
+  padding: 0 6px;
+}
 
 .user-add-form {
   display: grid;

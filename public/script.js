@@ -1900,6 +1900,32 @@
     );
   }
 
+  function operatorDivision(name) {
+    const row = (state.master.operatorDetails || []).find(
+      (item) => item.value.toLowerCase() === String(name || "").trim().toLowerCase(),
+    );
+    const department = String(row?.departemen || "").trim().toLowerCase();
+    const position = String(row?.jabatan || "").trim().toLowerCase();
+    if (["filling", "press"].includes(department)) return department;
+    return department === "produksi" ? ({ "operator filling": "filling", "operator press": "press" }[position] || "") : "";
+  }
+
+  function operatorValues(line = "all") {
+    return masterValues("operator").filter((name) => {
+      const division = operatorDivision(name);
+      return division && (line === "all" || division === line);
+    });
+  }
+
+  function masterInputValues(input) {
+    if (input.dataset.master !== "operator") return masterValues(input.dataset.master);
+    const line = input.closest("[data-line]")?.dataset.line ||
+      (input.id === "dashboardPressKpiOperator" ? "press" :
+        input.id === "lap-kpi-operator" ? normalizeKpiType(el("lap-kpi-type")?.value || "filling") :
+          input.id === "lap-operator" ? el("lap-line")?.value || "all" : "all");
+    return operatorValues(["filling", "press"].includes(line) ? line : "all");
+  }
+
   function normalizedFuzzyText(value) {
     return String(value || "")
       .toLowerCase()
@@ -2046,7 +2072,7 @@
       return false;
     }
 
-    const canonical = canonicalMasterValue(input.dataset.master, value);
+    const canonical = masterInputValues(input).find((item) => item.toLowerCase() === value.toLowerCase());
     if (!canonical) {
       input.setCustomValidity("Pilih nilai yang tersedia pada data master.");
       input.classList.add("is-invalid");
@@ -2117,7 +2143,7 @@
         .trim()
         .toLowerCase();
 
-      let sourceValues = masterValues(input.dataset.master);
+      let sourceValues = masterInputValues(input);
       // Khusus filter Laporan KPI, suggestion hanya menampilkan karyawan
       // yang benar-benar memiliki pengerjaan pada line dan bulan KPI terpilih.
       if (input.id === "lap-kpi-operator") {
@@ -2129,6 +2155,7 @@
             period,
             el("lap-kpi-type")?.value || "filling",
           );
+          sourceValues = sourceValues.filter((name) => masterInputValues(input).includes(name));
         }
       }
 
@@ -8125,6 +8152,7 @@
     const uniqueValues = new Map();
     rows.forEach((entry) => {
       const value = String(entry?.[field] || "").trim();
+      if (field === "operator" && !operatorValues(el("lap-line")?.value || "all").includes(value)) return;
       const key = value.toLocaleLowerCase("id");
       if (value && !uniqueValues.has(key)) uniqueValues.set(key, value);
     });
@@ -9029,18 +9057,17 @@
       attendance: 15,
     }),
   });
-  const SHIFT_LEADER_MASTER_NAME = "ARUNG GILANG SAMPURNA";
+  function getProductionManagementName(type) {
+    const position = normalizeKpiType(type) === "spv" ? "spv produksi" : "kashift produksi";
+    const names = [...new Set((state.master?.operatorDetails || [])
+      .filter((row) => String(row.jabatan || "").trim().toLowerCase().replace(/\s+/g, " ") === position)
+      .map((row) => String(row.value || "").trim())
+      .filter(Boolean))];
+    return names.join(", ") || (position === "kashift produksi" ? "Kashift Produksi" : "SPV Produksi");
+  }
 
   function getShiftLeaderName() {
-    const target = SHIFT_LEADER_MASTER_NAME.toLowerCase();
-    return (
-      (state.master.operator || []).find(
-        (name) =>
-          String(name || "")
-            .trim()
-            .toLowerCase() === target,
-      ) || SHIFT_LEADER_MASTER_NAME
-    );
+    return getProductionManagementName("shift");
   }
 
   const KPI_FILLING_DEFAULTS = Object.freeze({
@@ -9820,6 +9847,7 @@
       .forEach((item) => {
         const name = String(item.operator || "").trim();
         if (!name) return;
+        if (!operatorValues(["filling", "press"].includes(line) ? line : "all").includes(name)) return;
         const key = name.toLowerCase();
         if (!names.has(key)) names.set(key, name);
       });
@@ -9950,9 +9978,7 @@
       kpiType: normalizeKpiType(reportType),
       lineLabel: kpiTypeLabel(reportType),
       operator:
-        normalizeKpiType(reportType) === "spv"
-          ? "SPV Produksi"
-          : getShiftLeaderName(),
+        getProductionManagementName(reportType),
       period,
       outputTarget,
       outputActual: totalQty,
@@ -10391,7 +10417,7 @@
         reports: report ? [report] : [],
         period,
         selectedOperator:
-          type === "spv" ? "SPV Produksi" : getShiftLeaderName(),
+          getProductionManagementName(type),
         type,
         error: "",
       };
@@ -11210,7 +11236,11 @@
           const qty = Math.max(0, Number(valueForEntry(entry)) || 0);
           if (!qty) return;
           const bottle = String(entry.botol || "Botol tidak diketahui").trim();
-          byBottle.set(bottle, (byBottle.get(bottle) || 0) + qty);
+          const bottleWithCartonQty = `${bottle} (${laporanQtyPerCartonDisplay(entry)})`;
+          byBottle.set(
+            bottleWithCartonQty,
+            (byBottle.get(bottleWithCartonQty) || 0) + qty,
+          );
         });
         const details = Array.from(byBottle.entries())
           .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "id"))
@@ -11468,6 +11498,7 @@
               return `
             <span class="chip">
               ${esc(value)}
+              ${category === "operator" ? `<button type="button" data-cat="operator" data-value="${esc(value)}" data-action="edit" title="Edit departemen dan jabatan">Edit</button>` : ""}
               ${
                 readonly
                   ? ""
@@ -11514,6 +11545,21 @@
             "Anda tidak memiliki akses Setting / Master Data.",
             true,
           );
+        if (btn.dataset.action === "edit") {
+          const editor = qs('.chip-add[data-cat="operator"]');
+          const details = (state.master.operatorDetails || []).find((row) => row.value === btn.dataset.value);
+          const name = qs("input", editor);
+          name.value = btn.dataset.value;
+          name.readOnly = true;
+          editor.dataset.editing = "1";
+          qs('[name="departemen"]', editor).value = details?.departemen || "";
+          qs('[name="jabatan"]', editor).value = details?.jabatan || "";
+          qs("button", editor).textContent = "Simpan perubahan";
+          qs('[data-cancel-operator]', editor).hidden = false;
+          editor.scrollIntoView({ block: "center", behavior: "smooth" });
+          qs('[name="departemen"]', editor).focus();
+          return;
+        }
         if (
           !(await confirmDelete({
             title: "Hapus master data?",
@@ -11543,6 +11589,28 @@
       const input = qs("input", wrap);
       const btn = qs("button", wrap);
       if (!input || !btn) return;
+      if (category === "operator") {
+        wrap.classList.add("operator-master-editor");
+        input.maxLength = 200;
+        input.setAttribute("aria-label", "Nama operator");
+        wrap.insertAdjacentHTML("beforeend", `
+          <label>Departemen<input name="departemen" maxlength="100" list="operator-departments" placeholder="Contoh: Produksi" /></label>
+          <label>Jabatan / Bagian<input name="jabatan" maxlength="100" list="operator-positions" placeholder="Contoh: Operator Filling atau Operator Press" /></label>
+          <datalist id="operator-departments"><option value="Produksi"></option></datalist>
+          <datalist id="operator-positions"><option value="Operator Filling"></option><option value="Operator Press"></option></datalist>
+          <small>Produksi dengan jabatan Operator Filling hanya muncul di Filling; Operator Press hanya di Press. Lengkapi operator lama lewat tombol Edit.</small>
+          <button type="button" data-cancel-operator hidden>Batal edit</button>
+        `);
+        qs('[data-cancel-operator]', wrap).addEventListener("click", () => {
+          delete wrap.dataset.editing;
+          input.readOnly = false;
+          input.value = "";
+          btn.textContent = "Tambah";
+          qs('[data-cancel-operator]', wrap).hidden = true;
+          qs('[name="departemen"]', wrap).value = "";
+          qs('[name="jabatan"]', wrap).value = "";
+        });
+      }
 
       async function addMaster() {
         if (!canLevel("master", "write"))
@@ -11554,12 +11622,22 @@
         if (!value) return;
         btn.disabled = true;
         try {
-          const data = await apiPost("master.add", { category, value });
+          const details = category === "operator" ? {
+            departemen: qs('[name="departemen"]', wrap).value.trim(),
+            jabatan: qs('[name="jabatan"]', wrap).value.trim(),
+          } : {};
+          if (category === "operator" && (!details.departemen || !details.jabatan)) {
+            toast("Isi departemen dan jabatan operator.", true);
+            return;
+          }
+          const editing = wrap.dataset.editing === "1";
+          const data = await apiPost(editing ? "master.update" : "master.add", { category, value, ...details });
           state.master = data.master;
           input.value = "";
+          if (category === "operator") qs('[data-cancel-operator]', wrap).click();
           renderMasterChips();
           refreshAllDropdowns();
-          toast("Master data berhasil ditambahkan.");
+          toast("Master data berhasil disimpan.");
         } catch (err) {
           toast(err.message, true);
         } finally {
@@ -11600,12 +11678,14 @@
       const max = Math.max(op.length, produk.length, botol.length);
       const rows = Array.from({ length: max }, (_, i) => [
         op[i] || "",
+        (state.master.operatorDetails || []).find((row) => row.value === op[i])?.departemen || "",
+        (state.master.operatorDetails || []).find((row) => row.value === op[i])?.jabatan || "",
         produk[i] || "",
         botol[i] || "",
       ]);
       downloadText(
         `master-data-${todayStr()}.csv`,
-        toCSV(["Nama Operator", "Nama Produk", "Nama Botol"], rows),
+        toCSV(["Nama Operator", "Departemen", "Jabatan", "Nama Produk", "Nama Botol"], rows),
       );
     });
   }

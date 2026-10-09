@@ -42,6 +42,14 @@ try {
             foreach (explode(';', file_get_contents(dirname(__DIR__).'/database/schema.sql')) as $sql) {
                 if (trim($sql) !== '') DB::connection()->exec($sql);
             }
+            foreach (['departemen', 'jabatan'] as $column) {
+                if (!DB::run('SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name=?', ['production_master', $column])->fetchColumn()) {
+                    DB::connection()->exec("ALTER TABLE production_master ADD COLUMN `$column` VARCHAR(100) NULL");
+                }
+            }
+            if (DB::run('SELECT is_nullable FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name=?', ['production_master', 'extra'])->fetchColumn() === 'NO') {
+                DB::connection()->exec('ALTER TABLE production_master MODIFY extra LONGTEXT NULL DEFAULT NULL');
+            }
             $migrated = App\RecordMigration::run();
             echo "Migrasi tabel terpisah: $migrated record.\n";
             if (DB::run("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'master_values'")->fetchColumn()) {

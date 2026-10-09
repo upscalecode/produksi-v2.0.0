@@ -21,6 +21,7 @@ class ApdService
         }
         Validation::check($data, ['tanggal' => 'required|date_format:Y-m-d', 'operator' => 'required|string', 'scores' => 'required|array', 'alasan' => 'nullable|string|max:15000']);
         $data['operator'] = $this->production->canonical('operator', $data['operator']);
+        $this->production->assertOperatorLine($data['operator'], 'all');
         Permissions::check(count(preg_split('/\s+/', trim($data['alasan'] ?? ''), -1, PREG_SPLIT_NO_EMPTY)) <= 300, 'Alasan maksimal 300 kata.');
         $scores = [];
         $total = $weighted = 0;

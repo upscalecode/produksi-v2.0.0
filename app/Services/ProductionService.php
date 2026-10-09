@@ -10,9 +10,12 @@ class ProductionService
 
     public function master(): array
     {
-        $result = ['operator' => [], 'produk' => [], 'botol' => []];
+        $result = ['operator' => [], 'produk' => [], 'botol' => [], 'operatorDetails' => []];
         foreach ($this->records->all('master') as $row) {
             $result[$row['category']][] = $row['value'];
+            if ($row['category'] === 'operator') {
+                $result['operatorDetails'][] = ['value' => $row['value'], 'departemen' => $row['departemen'] ?? '', 'jabatan' => $row['jabatan'] ?? ''];
+            }
         }
         $result['botolpecah'] = $result['botol'];
 
@@ -21,6 +24,7 @@ class ProductionService
 
     public function canonical(string $category, mixed $value): string
     {
+        $category = Records::masterCategory($category);
         $value = trim((string) $value);
         foreach ($this->master()[$category] as $known) {
             if (mb_strtolower($known) === mb_strtolower($value)) {
@@ -30,17 +34,40 @@ class ProductionService
         Permissions::check(false, "$category tidak terdaftar di Master.");
     }
 
-    public function masterWrite(string $category, string $value, bool $remove = false): void
+    public function masterWrite(string $category, string $value, bool $remove = false, array $details = [], bool $update = false): void
     {
+        $category = Records::masterCategory($category);
         Validation::check(compact('category', 'value'), ['category' => 'required|in:operator,produk,botol', 'value' => 'required|string|max:200']);
         $value = trim($value);
         $id = hash('sha256', $category.'|'.mb_strtolower($value));
         if ($remove) {
             $this->records->delete('master', $id);
         } else {
-            Permissions::check(! $this->records->get('master', $id), 'Data master sudah ada.');
-            $this->records->put('master', $id, compact('category', 'value'));
+            $old = $this->records->get('master', $id);
+            Permissions::check($update ? (bool) $old : ! $old, $update ? 'Data master tidak ditemukan.' : 'Data master sudah ada.');
+            if ($category === 'operator') {
+                $details = ['departemen' => trim((string) ($details['departemen'] ?? '')), 'jabatan' => trim((string) ($details['jabatan'] ?? ''))];
+                Validation::check($details, ['departemen' => 'required|string|max:100', 'jabatan' => 'required|string|max:100']);
+            } else {
+                $details = [];
+            }
+            $this->records->put('master', $id, compact('category', 'value') + $details);
         }
+    }
+
+    public function assertOperatorLine(string $operator, string $line): void
+    {
+        foreach ($this->master()['operatorDetails'] as $row) {
+            if (mb_strtolower($row['value']) !== mb_strtolower(trim($operator))) continue;
+            $department = mb_strtolower(trim($row['departemen']));
+            $position = mb_strtolower(trim($row['jabatan']));
+            $positions = ['operator filling' => 'filling', 'operator press' => 'press'];
+            $assigned = in_array($department, ['filling', 'press'], true) ? $department
+                : ($department === 'produksi' ? ($positions[$position] ?? '') : '');
+            Permissions::check($assigned !== '' && ($line === 'all' || $assigned === $line), 'Operator tidak termasuk bagian '.($line === 'all' ? 'Produksi' : ucfirst($line)).'. Lengkapi departemen dan jabatan di Master Operator.');
+            return;
+        }
+        Permissions::check(false, 'Operator tidak terdaftar di Master.');
     }
 
     public function model(): array
@@ -93,6 +120,7 @@ class ProductionService
         foreach (['operator', 'produk', 'botol'] as $key) {
             $data[$key] = $this->canonical($key, $data[$key] ?? '');
         }
+        $this->assertOperatorLine($data['operator'], $data['line']);
         Permissions::check($spk['produk'] === $data['produk'] && $spk['botol'] === $data['botol'], 'Produk atau Botol tidak sesuai dengan SPK.');
         if ($data['line'] === 'filling' && $spk['qtyPerDus'] > 0) {
             $data['qtyBotolPerKardus'] = $spk['qtyPerDus'];
