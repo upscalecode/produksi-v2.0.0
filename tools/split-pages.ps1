@@ -1,8 +1,9 @@
 param(
-  [string]$Source = "index.html"
+  [string]$Source = (Join-Path $PSScriptRoot "../public/index.html")
 )
 
 $ErrorActionPreference = "Stop"
+$pageDirectory = Split-Path -Parent ([IO.Path]::GetFullPath($Source))
 $html = Get-Content -LiteralPath $Source -Raw -Encoding UTF8
 $sharedModalsPath = Join-Path $PSScriptRoot 'shared-modals.html'
 if (-not (Test-Path -LiteralPath $sharedModalsPath)) {
@@ -45,7 +46,7 @@ $blocks = @{}
 foreach ($name in $views.Keys) {
   # Setiap file halaman menjadi sumber kanonis untuk view miliknya. Dengan
   # demikian perubahan pada laporan.html tidak tertimpa oleh salinan index.html.
-  $sourceDocument = Get-Content -LiteralPath $views[$name] -Raw -Encoding UTF8
+  $sourceDocument = Get-Content -LiteralPath (Join-Path $pageDirectory $views[$name]) -Raw -Encoding UTF8
   $blocks[$name] = Get-ViewBlock $sourceDocument $name
 }
 
@@ -77,7 +78,7 @@ foreach ($current in $views.Keys) {
   $output = $pagePrefix + $content + "`r`n`r`n        " + $sharedModals.Trim() + "`r`n      " + $suffix
   $output = $output -replace 'style\.css\?v=[^"'']+', 'style.css?v=20261003-v112-damage-card-tooltip'
   $output = $output -replace 'script\.js\?v=[^"'']+', 'script.js?v=20261003-v204-damage-card-tooltip'
-  Set-Content -LiteralPath $views[$current] -Value $output -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $pageDirectory $views[$current]) -Value $output -Encoding UTF8
 }
 
 Write-Host ('Halaman dibuat: ' + (($views.Values | Select-Object -Unique) -join ', '))

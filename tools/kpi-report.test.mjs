@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-for (const path of ['../public/script.js', '../script.js']) {
+for (const path of ['../public/script.js']) {
   const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
   const assignment = source.slice(
     source.indexOf('    if (Array.isArray(data.entries)) state.entries = data.entries;'),
@@ -17,6 +17,7 @@ for (const path of ['../public/script.js', '../script.js']) {
   const load = data => {
     const context = vm.createContext({
       data,
+      operatorValues: () => ['Operator A'],
       state: { entries: [], reportEntries: [] },
       normalizeKpiType: type => type,
       dashboardDateInPeriod: () => true,
@@ -52,6 +53,7 @@ for (const path of ['../public/script.js', '../script.js']) {
     const context = vm.createContext({
       state: { reportEntries: entries.concat([{ ...entries[0], tab: 'press', totalQty: 3500 }]), apdEntries: [], settings: {}, currentUser: { role: 'superuser' } },
       el,
+      operatorValues: () => ['Operator A'],
       qs: () => null,
       qsa: () => [],
       dashboardSetText: (id, value) => { el(id).textContent = value; },

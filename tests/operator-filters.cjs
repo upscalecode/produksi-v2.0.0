@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-for (const file of ['script.js', 'public/script.js']) {
+for (const file of ['public/script.js']) {
   const source = fs.readFileSync(file, 'utf8');
   const start = source.indexOf('  function masterValues(');
   const end = source.indexOf('  function normalizedFuzzyText(', start);

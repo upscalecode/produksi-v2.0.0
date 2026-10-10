@@ -98,9 +98,11 @@ database saat membagikan hasil pemeriksaan.
 - `database/schema.sql`: skema MySQL.
 - `bin/console.php`: setup, pembuatan administrator, dan impor snapshot.
 
-Berkas Laravel sebelumnya disimpan lokal dalam `.legacy-laravel/` untuk pemulihan.
-Folder tersebut diabaikan Git dan tidak dimuat oleh aplikasi. `Code.gs` serta tes
-JavaScript lama hanya referensi perilaku aplikasi sebelumnya.
+File tampilan aktif hanya berada di `public/`. Salinan frontend di root, backend
+Google Apps Script lama, dan arsip framework Laravel telah dihapus.
+`tools/split-pages.ps1` membaca dan memperbarui halaman di `public/`.
+`tools/export-php.gs` tetap tersedia untuk ekspor dari proyek Apps Script lama
+yang masih memiliki backend aslinya.
 
 ## Tabel seperti spreadsheet
 

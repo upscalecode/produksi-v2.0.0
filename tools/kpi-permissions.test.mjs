@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs';
 
-for (const path of ['script.js', 'public/script.js']) {
+for (const path of ['public/script.js']) {
   const source = fs.readFileSync(path, 'utf8');
   const context = vm.createContext({ state: {} });
   vm.runInContext(source.slice(source.indexOf('  const DEFAULT_USER_PERMISSIONS'), source.indexOf('  function selectAvailableKpiMonth(')), context);
