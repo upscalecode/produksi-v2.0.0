@@ -80,7 +80,7 @@ class ProductionController
     {
         $can = fn ($s) => Permissions::can($user, $s);
         $dashboard = $can('dashboard');
-        $kpi = $can('kpiFilling') || $can('kpiPress') || $can('kpiSpv');
+        $kpi = $can('kpiFilling') || $can('kpiPress') || $can('kpiShift') || $can('kpiSpv');
         $reports = $can('workReport') || $kpi;
         $all = $this->production->entries();
         $same = $dashboard && $reports;

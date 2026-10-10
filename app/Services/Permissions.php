@@ -10,16 +10,16 @@ class Permissions
         'press' => 'accessPress', 'apd' => 'accessApd', 'reports' => 'accessReports',
         'workReport' => 'accessWorkReport', 'spkReport' => 'accessSpkReport',
         'kpiFilling' => 'accessKpiFillingReport', 'kpiPress' => 'accessKpiPressReport',
-        'kpiSpv' => 'accessKpiSpvReport', 'master' => 'accessMaster', 'kpiSettings' => 'accessKpiSettings',
+        'kpiShift' => 'accessKpiShiftReport', 'kpiSpv' => 'accessKpiSpvReport', 'master' => 'accessMaster', 'kpiSettings' => 'accessKpiSettings',
     ];
 
-    public const CHILDREN = ['workReport', 'spkReport', 'kpiFilling', 'kpiPress', 'kpiSpv'];
+    public const CHILDREN = ['workReport', 'spkReport', 'kpiFilling', 'kpiPress', 'kpiShift', 'kpiSpv'];
 
     public static function normalize(string $role, array $raw = []): array
     {
         $super = $role === 'superuser';
         // Preserve the combined flags used by older exported accounts.
-        $fallbacks = ['accessWorkReport' => 'accessReports', 'accessSpkReport' => 'accessReports', 'accessKpiReport' => 'accessReports', 'accessKpiFillingReport' => 'accessReports', 'accessKpiPressReport' => 'accessReports', 'accessKpiSpvReport' => 'accessKpiReport', 'accessSpk' => 'accessFilling', 'accessKpiSettings' => 'accessMaster'];
+        $fallbacks = ['accessWorkReport' => 'accessReports', 'accessSpkReport' => 'accessReports', 'accessKpiReport' => 'accessReports', 'accessKpiFillingReport' => 'accessReports', 'accessKpiPressReport' => 'accessReports', 'accessKpiShiftReport' => 'accessKpiReport', 'accessKpiSpvReport' => 'accessKpiReport', 'accessSpk' => 'accessFilling', 'accessKpiSettings' => 'accessMaster'];
         foreach ($fallbacks as $flag => $parent) {
             if (! array_key_exists($flag, $raw) && array_key_exists($parent, $raw)) {
                 $raw[$flag] = $raw[$parent] === true;
@@ -42,7 +42,7 @@ class Permissions
             if (! $super && ! $hasLevels) {
                 $allowed = $p[$flag] || (str_starts_with($scope, 'kpi') && $p['accessKpiReport']);
                 if ($scope === 'reports') {
-                    $allowed = $p['accessReports'] || $p['accessWorkReport'] || $p['accessSpkReport'] || $p['accessKpiReport'] || $p['accessKpiFillingReport'] || $p['accessKpiPressReport'] || $p['accessKpiSpvReport'];
+                    $allowed = $p['accessReports'] || $p['accessWorkReport'] || $p['accessSpkReport'] || $p['accessKpiReport'] || $p['accessKpiFillingReport'] || $p['accessKpiPressReport'] || $p['accessKpiShiftReport'] || $p['accessKpiSpvReport'];
                 }
                 $level = ! $allowed ? 'none' : ($scope === 'reports' && $p['accessReports'] ? 'admin' : (in_array($scope, ['spk', 'filling', 'press']) && $p['viewAllData'] && $p['editOthers'] && $p['deleteOthers'] ? 'admin' : ($scope === 'apd' ? 'admin' : (in_array($scope, ['spk', 'filling', 'press', 'master', 'kpiSettings']) ? 'write' : ($p['viewAllData'] ? 'admin' : 'read')))));
             }
@@ -56,7 +56,7 @@ class Permissions
             $p[self::SCOPES[$scope]] = $p['levels']['reports'] === 'admin' || ($p['levels']['reports'] !== 'none' && $p['levels'][$scope] !== 'none');
         }
         $p['accessReports'] = $p['levels']['reports'] !== 'none';
-        $p['accessKpiReport'] = $p['accessKpiFillingReport'] || $p['accessKpiPressReport'] || $p['accessKpiSpvReport'];
+        $p['accessKpiReport'] = $p['accessKpiFillingReport'] || $p['accessKpiPressReport'] || $p['accessKpiShiftReport'] || $p['accessKpiSpvReport'];
         foreach (['spk', 'filling', 'press', 'apd'] as $scope) {
             foreach (['own', 'others'] as $owner) {
                 $fallback = $hasLevels ? $owner === 'own' : ($owner === 'own' ? ($p['editOwn'] || $p['deleteOwn']) : ($p['editOthers'] || $p['deleteOthers']));

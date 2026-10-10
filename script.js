@@ -248,6 +248,7 @@
     accessKpiReport: false,
     accessKpiFillingReport: false,
     accessKpiPressReport: false,
+    accessKpiShiftReport: false,
     accessKpiSpvReport: false,
     deleteUnpressed: false,
     viewAllData: false,
@@ -277,6 +278,7 @@
         saved.accessKpiFillingReport ?? saved.accessReports ?? false,
       accessKpiPressReport:
         saved.accessKpiPressReport ?? saved.accessReports ?? false,
+      accessKpiShiftReport: saved.accessKpiShiftReport ?? saved.accessKpiReport ?? saved.accessReports ?? false,
       accessKpiSpvReport:
         saved.accessKpiSpvReport ??
         saved.accessKpiReport ??
@@ -310,6 +312,7 @@
       spkReport: "accessSpkReport",
       kpiFilling: "accessKpiFillingReport",
       kpiPress: "accessKpiPressReport",
+      kpiShift: "accessKpiShiftReport",
       kpiSpv: "accessKpiSpvReport",
       master: "accessMaster",
       kpiSettings: "accessKpiSettings",
@@ -322,7 +325,7 @@
         ? "write"
         : "read";
     if (
-      ["workReport", "spkReport", "kpiFilling", "kpiPress", "kpiSpv"].includes(
+      ["workReport", "spkReport", "kpiFilling", "kpiPress", "kpiShift", "kpiSpv"].includes(
         scope,
       )
     ) {
@@ -331,7 +334,7 @@
       if (parent === "admin") return true;
       if (parent === "none") return false;
     }
-    return (rank[perms.levels?.[scope] || fallback] || 0) >= rank[minimum];
+    return (rank[(perms.levels ? perms.levels[scope] || "none" : fallback)] || 0) >= rank[minimum];
   }
 
   function canManage(scope, owner, user = state.currentUser) {
@@ -344,9 +347,10 @@
 
   function canKpiType(type) {
     if (!canLevel("reports")) return false;
-    if (can("accessKpiReport")) return true;
+    if (!permissionsOf(state.currentUser).levels && can("accessKpiReport")) return true;
     if (type === "press") return canLevel("kpiPress");
     if (type === "filling") return canLevel("kpiFilling");
+    if (type === "shift") return canLevel("kpiShift");
     if (type === "spv") return canLevel("kpiSpv");
     return false;
   }
@@ -358,7 +362,7 @@
         canLevel("spkReport") ||
         canKpiType("filling") ||
         canKpiType("press") ||
-        canKpiType("spv"))
+        canKpiType("shift") || canKpiType("spv"))
     );
   }
 
@@ -502,7 +506,7 @@
             : !(
                 canKpiType("filling") ||
                 canKpiType("press") ||
-                canKpiType("spv")
+                canKpiType("shift") || canKpiType("spv")
               );
     });
     const activeReport = qs(".laporan-subnav-btn.active");
@@ -10647,7 +10651,7 @@
             : name === "kpi" &&
                 (canKpiType("filling") ||
                   canKpiType("press") ||
-                  canKpiType("spv"))
+                  canKpiType("shift") || canKpiType("spv"))
               ? "kpi"
               : canLevel("spkReport")
                 ? "spk"
@@ -11791,12 +11795,13 @@
       ["spkReport", "Data SPK"],
       ["kpiFilling", "Laporan KPI Filling"],
       ["kpiPress", "Laporan KPI Press"],
+      ["kpiShift", "Laporan KPI Kashift"],
       ["kpiSpv", "Laporan KPI SPV Produksi"],
       ["master", "Data Master (Sumber Search)"],
       ["kpiSettings", "Pengaturan KPI"],
     ];
     if (permissionGrid) {
-      permissionGrid.innerHTML = `<div class="permission-table-wrap"><table class="permission-table"><thead><tr><th>Bagian</th><th>Read</th><th>Write</th><th>Administrator</th><th>Kelola Sendiri</th><th>Kelola User Lain</th><th>Export CSV</th></tr></thead><tbody>${permissionScopes.map(([scope, title]) => `<tr data-scope="${scope}" ${["workReport", "spkReport", "kpiFilling", "kpiPress", "kpiSpv"].includes(scope) ? 'class="permission-child"' : ""}><th scope="row">${title}</th>${["read", "write", "admin"].map((level) => `<td><label><input type="checkbox" data-level="${level}" aria-label="${title}: ${level}" ${["dashboard", "reports", "workReport", "spkReport", "kpiFilling", "kpiPress", "kpiSpv"].includes(scope) && level === "write" ? 'disabled title="Bagian ini tidak memiliki aksi tulis"' : ""}></label></td>`).join("")}${["own", "others"].map((owner) => `<td><label><input type="checkbox" data-manage="${owner}" aria-label="${title}: kelola data ${owner === "own" ? "sendiri" : "user lain"}" ${["spk", "filling", "press", "apd"].includes(scope) ? "" : 'disabled title="Tidak berlaku pada bagian ini"'}></label></td>`).join("")}<td><label><input type="checkbox" data-export-csv aria-label="${title}: Export CSV" ${["filling", "press"].includes(scope) ? "" : 'disabled title="Export CSV khusus Filling dan Press"'}></label></td></tr>`).join("")}</tbody></table></div><p class="hint-text">Export CSV dapat diberikan secara terpisah untuk Filling dan Press. Kelola Sendiri dan Kelola User Lain berlaku pada SPK, Filling, Press, dan APD.</p>`;
+      permissionGrid.innerHTML = `<div class="permission-table-wrap"><table class="permission-table"><thead><tr><th>Bagian</th><th>Read</th><th>Write</th><th>Administrator</th><th>Kelola Sendiri</th><th>Kelola User Lain</th><th>Export CSV</th></tr></thead><tbody>${permissionScopes.map(([scope, title]) => `<tr data-scope="${scope}" ${["workReport", "spkReport", "kpiFilling", "kpiPress", "kpiShift", "kpiSpv"].includes(scope) ? 'class="permission-child"' : ""}><th scope="row">${title}</th>${["read", "write", "admin"].map((level) => `<td><label><input type="checkbox" data-level="${level}" aria-label="${title}: ${level}" ${["dashboard", "reports", "workReport", "spkReport", "kpiFilling", "kpiPress", "kpiShift", "kpiSpv"].includes(scope) && level === "write" ? 'disabled title="Bagian ini tidak memiliki aksi tulis"' : ""}></label></td>`).join("")}${["own", "others"].map((owner) => `<td><label><input type="checkbox" data-manage="${owner}" aria-label="${title}: kelola data ${owner === "own" ? "sendiri" : "user lain"}" ${["spk", "filling", "press", "apd"].includes(scope) ? "" : 'disabled title="Tidak berlaku pada bagian ini"'}></label></td>`).join("")}<td><label><input type="checkbox" data-export-csv aria-label="${title}: Export CSV" ${["filling", "press"].includes(scope) ? "" : 'disabled title="Export CSV khusus Filling dan Press"'}></label></td></tr>`).join("")}</tbody></table></div><p class="hint-text">Export CSV dapat diberikan secara terpisah untuk Filling dan Press. Kelola Sendiri dan Kelola User Lain berlaku pada SPK, Filling, Press, dan APD.</p>`;
       function syncManagement(row, reset) {
         if (!["spk", "filling", "press", "apd"].includes(row.dataset.scope))
           return;
@@ -11968,6 +11973,7 @@
             "spkReport",
             "kpiFilling",
             "kpiPress",
+            "kpiShift",
             "kpiSpv",
           ].forEach((scope) => {
             permissions.levels[scope] = "none";

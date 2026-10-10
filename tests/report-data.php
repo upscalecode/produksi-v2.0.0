@@ -28,6 +28,7 @@ $method = new ReflectionMethod($controller, 'appdata');
 $cases = [
     'dashboard and all reports' => ['dashboard' => 'read', 'reports' => 'admin'],
     'KPI only without dashboard' => ['reports' => 'read', 'kpiFilling' => 'read'],
+    'Kashift only without dashboard' => ['reports' => 'read', 'kpiShift' => 'read'],
     'work report without dashboard' => ['reports' => 'read', 'workReport' => 'read'],
     'production without reports' => ['filling' => 'read'],
 ];
