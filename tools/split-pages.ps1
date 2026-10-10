@@ -1,5 +1,5 @@
 param(
-  [string]$Source = (Join-Path $PSScriptRoot "../public/index.html")
+  [string]$Source = (Join-Path $PSScriptRoot "../public_html/public/index.html")
 )
 
 $ErrorActionPreference = "Stop"

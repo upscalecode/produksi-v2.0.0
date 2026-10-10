@@ -54,4 +54,4 @@ async function check(file) {
   await context.pendingSave;
   console.log(file + ': autosave checks passed');
 }
-(async () => { await check('public/script.js'); })().catch(error => { console.error(error); process.exitCode = 1; });
+(async () => { await check('public_html/public/script.js'); })().catch(error => { console.error(error); process.exitCode = 1; });

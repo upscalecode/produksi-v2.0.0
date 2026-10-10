@@ -6,6 +6,23 @@ menggunakan tampilan aplikasi sebelumnya. Endpoint frontend tetap `/api/producti
 Semua akun, token sesi, master, data produksi, pengaturan, dan foto APD disimpan
 pada MySQL. Google Apps Script tidak digunakan saat aplikasi berjalan.
 
+## Struktur hosting saat ini
+
+Folder web sekarang adalah `public_html/public/`. DocumentRoot hosting tetap
+`public_html`, dengan `public_html/.htaccess` mengarahkan permintaan ke `public/`.
+Unggah isi folder lokal `public_html/` ke folder `public_html/` hosting, termasuk
+file tersembunyi `.htaccess`; jangan membuat `public_html/public_html/`.
+
+Letakkan `app/`, `database/`, `bin/`, `bootstrap.php`, `koneksi.php`, dan `.env`
+di folder induk `public_html/`. Endpoint `public_html/public/index.php` memuat
+`bootstrap.php` dua tingkat di atasnya. `.htaccess` di root repository bukan
+pengganti `public_html/.htaccess` untuk struktur ini.
+
+Jalankan lokal dengan `php -S 127.0.0.1:8000 -t public_html/public router.php`.
+Referensi lokasi `public/` pada panduan lama di bawah berarti
+`public_html/public/`; panduan lama untuk mengunggah seluruh proyek ke
+`public_html` tidak berlaku untuk struktur ini.
+
 ## Persiapan
 
 - PHP 8.2+ dengan ekstensi `pdo_mysql`, `mbstring`, `iconv`, dan dukungan JSON.

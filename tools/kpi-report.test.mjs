@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-for (const path of ['../public/script.js']) {
+for (const path of ['../public_html/public/script.js']) {
   const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
   const assignment = source.slice(
     source.indexOf('    if (Array.isArray(data.entries)) state.entries = data.entries;'),
