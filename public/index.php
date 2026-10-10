@@ -1,5 +1,18 @@
 <?php
-require dirname(__DIR__).'/bootstrap.php';
+// Hosting: prefer the private directory outside public_html, then its protected fallback.
+$bootstrap = null;
+foreach ([dirname(__DIR__).'/private/bootstrap.php', __DIR__.'/private/bootstrap.php', dirname(__DIR__).'/bootstrap.php'] as $candidate) {
+    if (@is_file($candidate) && @is_readable($candidate)) {
+        $bootstrap = $candidate;
+        break;
+    }
+}
+if ($bootstrap === null) {
+    http_response_code(503);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit('Backend belum tersedia. Periksa lokasi folder private dan izin akses PHP.');
+}
+require $bootstrap;
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 if ($path === '/' || $path === '/index.php') {
     header('Content-Type: text/html; charset=utf-8');

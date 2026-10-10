@@ -6,3 +6,4 @@ backups/
 
 .runtime/
 .legacy-laravel/
+deployment/

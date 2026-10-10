@@ -47,36 +47,68 @@ folder proyek. File `.env`, kode backend, arsip lama, dan alat CLI berada di lua
 folder publik. Gunakan HTTPS saat aplikasi diakses melalui jaringan produksi.
 Server bawaan `php -S` digunakan untuk pengembangan lokal.
 
-## Hostinger dengan root proyek di public_html
+## Hosting: file publik dan backend privat
 
-Jika DocumentRoot tidak dapat diarahkan ke `public/`, unggah seluruh isi proyek
-ke `public_html`, termasuk `.htaccess` root dan `public/.htaccess`. `.htaccess`
-root mengarahkan semua permintaan ke `public/`, sehingga file backend dan
-konfigurasi di root tidak disajikan langsung. Pertahankan struktur folder;
-jangan hanya mengunggah halaman HTML di root proyek.
+Buat paket dari root proyek:
 
-Loader mencari `.env` di folder proyek terlebih dahulu, lalu di folder induknya.
-Jika proyek berada di `/home/user/domains/domain/public_html`, simpan `.env`
-di `/home/user/domains/domain/.env`. Jika ada `.env` di kedua lokasi, file di
-folder proyek dipakai. Environment server tetap diprioritaskan.
-Pastikan pengguna PHP dapat membaca file tersebut dan lokasi file diizinkan
-oleh pengaturan `open_basedir` hosting. Periksa lokasi yang dimuat tanpa
-menampilkan nilai konfigurasi melalui terminal hosting:
-
-```sh
-cd /home/user/domains/domain/public_html
-php bin/console.php env
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/build-hosting.ps1 -Layout outside
 ```
 
-Versi `.htaccess` root sebelumnya berisi `Require all denied` dan menghasilkan
-403 jika proyek diunggah langsung ke `public_html`. Ganti berkas tersebut dengan
-versi saat ini. Gunakan PHP 8.2+ dengan ekstensi yang disebutkan di atas, isi
-konfigurasi database di `koneksi.php`, lalu jalankan setup melalui CLI.
+Paket tersedia di `deployment/outside/` (diabaikan Git). Unggah isi
+`public_html/` paket ke `public_html/` hosting, termasuk `.htaccess`.
+Unggah folder `private/` sejajar dengan `public_html/`:
 
-Buka `/login.html` dan `/api/production?action=ping` untuk memeriksa halaman
-dan routing API. Jika 403 tetap muncul, periksa DocumentRoot domain serta
-permission file/folder melalui panel hosting. Jangan membuka akses file
-konfigurasi untuk mengatasi 403.
+```text
+folder domain/
+??? .env
+??? private/
+?   ??? .htaccess
+?   ??? app/
+?   ??? bin/
+?   ??? database/
+?   ??? bootstrap.php
+?   ??? koneksi.php
+??? public_html/
+    ??? .htaccess
+    ??? index.php
+    ??? login.html
+    ??? aset dan halaman lainnya
+```
+
+File penanda DO_NOT_UPLOAD_HERE saja belum membuktikan bahwa folder tersebut
+bisa atau tidak bisa dipakai. Pastikan melalui panel hosting bahwa folder
+`private/` dapat dibuat dan dibaca PHP (termasuk batas `open_basedir`).
+Paket tidak menyalin .env. Pertahankan .env hosting di lokasi pada diagram,
+atau simpan di private/.env. Periksa koneksi.php sebelum unggah; jangan
+menimpa konfigurasi hosting dengan kredensial lokal.
+
+Jika backend di luar public_html tidak diizinkan, buat paket cadangan:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/build-hosting.ps1 -Layout inside
+```
+
+Unggah isi `deployment/inside/public_html/` ke `public_html/` hosting.
+Backend berada di `public_html/private/`; simpan .env di
+`public_html/private/.env`. .htaccess publik menolak URL /private/ dan
+private/.htaccess berisi Require all denied. Perlindungan ini memerlukan
+server yang menerapkan .htaccess (Apache/LiteSpeed); jangan gunakan paket
+cadangan pada server yang mengabaikannya. Jangan meninggalkan dua salinan
+backend: loader memprioritaskan private/ di luar public_html.
+
+Setelah unggah, /login.html harus terbuka, /api/production?action=ping
+harus mengembalikan JSON, dan /private/bootstrap.php serta
+/private/database/schema.sql harus ditolak (403/404), tanpa isi file.
+Respons 503 Backend belum tersedia menunjukkan lokasi/izin backend salah.
+Dari dalam folder private, gunakan `php bin/console.php doctor` untuk
+memeriksa database dan `php bin/console.php env` untuk lokasi konfigurasi.
+
+Jangan unggah .git/, .runtime/, tes, dump data karyawan, atau seluruh root
+repository ke folder publik. Paket hanya menyertakan backend dan skema/migrasi
+yang diperlukan. Paket memuat koneksi.php sehingga tetap bersifat privat.
+Builder tidak menimpa paket yang sudah ada; pindahkan paket lama sebelum
+membuat ulang. Struktur pengembangan lokal tetap memakai public/.
 
 ## Struktur
 
