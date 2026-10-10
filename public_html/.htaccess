@@ -1,7 +1,0 @@
-Options -Indexes -MultiViews
-RewriteEngine On
-
-RewriteRule (^|/)\. - [F,L]
-RewriteRule ^(?:public_html/?)?$ /login.html [R=302,L]
-RewriteRule ^public(?:/|$) - [L]
-RewriteRule ^(.*)$ public/$1 [L]
