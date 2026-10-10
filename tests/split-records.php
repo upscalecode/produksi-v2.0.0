@@ -1,5 +1,5 @@
 <?php
-require dirname(__DIR__).'/bootstrap.php';
+require dirname(__DIR__).'/private/bootstrap.php';
 use App\Database as DB;
 use App\Services\Records;
 use App\RecordMigration;

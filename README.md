@@ -19,11 +19,11 @@ CREATE DATABASE newproduksi CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 1. Salin `.env.example` menjadi `.env` lalu isi koneksi MySQL.
-2. Jalankan `php bin/console.php setup` untuk membuat tabel. Perintah ini tidak
+2. Jalankan `php private/bin/console.php setup` untuk membuat tabel. Perintah ini tidak
    menghapus data yang sudah ada. Jika tabel lama `master_values` tersedia,
    master diimpor tanpa menimpa nilai yang sudah ada.
 3. Isi `ADMIN_PASSWORD` di `.env` dengan password minimal 12 karakter, kemudian
-   jalankan `php bin/console.php admin`. Akun yang sudah ada tidak ditimpa.
+   jalankan `php private/bin/console.php admin`. Akun yang sudah ada tidak ditimpa.
 4. Hapus nilai `ADMIN_PASSWORD` dari `.env` setelah administrator dibuat.
 5. Jalankan server lokal:
 
@@ -47,7 +47,51 @@ folder proyek. File `.env`, kode backend, arsip lama, dan alat CLI berada di lua
 folder publik. Gunakan HTTPS saat aplikasi diakses melalui jaringan produksi.
 Server bawaan `php -S` digunakan untuk pengembangan lokal.
 
-## Hosting: file publik dan backend privat
+## Deploy GitHub melalui Git hPanel (alur utama)
+
+Repository siap di-deploy langsung ke public_html. Pilih repository dan branch
+aktif di hPanel; Install Path kosong menggunakan public_html. Commit dan push
+perubahan struktur ini, lalu deploy branch tersebut. Folder deployment/ bukan
+bagian dari alur Git hPanel; paket pada bagian berikut hanya untuk unggah manual.
+
+Struktur hasil checkout:
+
+```text
+folder domain/
+??? .env                     (konfigurasi hosting yang sudah ada)
+??? public_html/
+    ??? .htaccess            (pengarah URL dan penolakan akses backend)
+    ??? private/
+    ?   ??? .htaccess        (Require all denied)
+    ?   ??? app/
+    ?   ??? bin/
+    ?   ??? database/
+    ?   ??? bootstrap.php
+    ?   ??? koneksi.php
+    ??? public/
+        ??? .htaccess
+        ??? index.php
+        ??? halaman dan aset
+```
+
+URL pengguna tetap /login.html dan /api/production; tidak perlu menambahkan
+/public/ di URL. Akses HTTP ke private/, tests/, tools/, database/, dan storage/
+ditolak oleh .htaccess root. private/.htaccess juga menolak akses langsung.
+Server wajib menerapkan aturan .htaccess; verifikasi /private/bootstrap.php
+dan /private/database/schema.sql menghasilkan 403 tanpa isi file setelah deploy.
+
+Backend dipindahkan ke private/ tanpa mengubah database. Loader mencari .env
+berurutan di private/, root repository, lalu induk repository. Jadi .env yang
+sudah sejajar dengan public_html tetap terbaca. Pertahankan konfigurasi hosting
+tersebut dan jangan masukkan rahasia ke GitHub. koneksi.php sekarang ada di
+private/koneksi.php; sesuaikan jika sebelumnya mengubahnya langsung di hosting.
+
+Tes PHP dapat dijalankan dari root repository seperti sebelumnya. Perintah CLI
+sekarang memakai php private/bin/console.php. Pemisahan backend ke luar
+public_html memerlukan alur deployment tambahan; bukan dilakukan otomatis oleh
+checkout Git hPanel ini.
+
+## Paket alternatif untuk unggah manual
 
 Buat paket dari root proyek:
 
@@ -101,8 +145,8 @@ Setelah unggah, /login.html harus terbuka, /api/production?action=ping
 harus mengembalikan JSON, dan /private/bootstrap.php serta
 /private/database/schema.sql harus ditolak (403/404), tanpa isi file.
 Respons 503 Backend belum tersedia menunjukkan lokasi/izin backend salah.
-Dari dalam folder private, gunakan `php bin/console.php doctor` untuk
-memeriksa database dan `php bin/console.php env` untuk lokasi konfigurasi.
+Dari root repository, gunakan `php private/bin/console.php doctor` untuk
+memeriksa database dan `php private/bin/console.php env` untuk lokasi konfigurasi.
 
 Jangan unggah .git/, .runtime/, tes, dump data karyawan, atau seluruh root
 repository ke folder publik. Paket hanya menyertakan backend dan skema/migrasi
@@ -112,23 +156,23 @@ membuat ulang. Struktur pengembangan lokal tetap memakai public/.
 
 ## Struktur
 
-Jika login gagal, jalankan `php bin/console.php doctor` melalui terminal pada
+Jika login gagal, jalankan `php private/bin/console.php doctor` melalui terminal pada
 server tempat aplikasi berjalan. Perintah ini hanya membaca: memeriksa ekstensi
 PHP, koneksi MySQL, tabel login, baris pengunci, dan keberadaan akun aktif.
 Konfigurasi bawaan lokal belum tentu cocok dengan akun database hosting.
 Nilai `DB_*` di environment atau `.env` mengalahkan `koneksi.php`.
-Jika tabel belum lengkap, jalankan `php bin/console.php setup`. Jika belum ada
-akun aktif, isi `ADMIN_PASSWORD` lalu jalankan `php bin/console.php admin`,
+Jika tabel belum lengkap, jalankan `php private/bin/console.php setup`. Jika belum ada
+akun aktif, isi `ADMIN_PASSWORD` lalu jalankan `php private/bin/console.php admin`,
 kemudian hapus `ADMIN_PASSWORD`. Jangan mengirim password atau isi konfigurasi
 database saat membagikan hasil pemeriksaan.
 
 - `public/`: delapan halaman HTML, CSS, JavaScript, gambar, dan endpoint PHP.
-- `app/Services/`: login, hak akses, SPK, Filling, Press, APD, dan saldo produksi.
-- `app/Database.php`: koneksi PDO dan kueri dengan parameter terikat.
-- `app/Http/Controllers/ProductionController.php`: pemetaan action API.
+- `private/app/Services/`: login, hak akses, SPK, Filling, Press, APD, dan saldo produksi.
+- `private/app/Database.php`: koneksi PDO dan kueri dengan parameter terikat.
+- `private/app/Http/Controllers/ProductionController.php`: pemetaan action API.
 - `bootstrap.php`: pemuatan konfigurasi dan kelas aplikasi tanpa dependency.
-- `database/schema.sql`: skema MySQL.
-- `bin/console.php`: setup, pembuatan administrator, dan impor snapshot.
+- `private/database/schema.sql`: skema MySQL.
+- `private/bin/console.php`: setup, pembuatan administrator, dan impor snapshot.
 
 File tampilan aktif hanya berada di `public/`. Salinan frontend di root, backend
 Google Apps Script lama, dan arsip framework Laravel telah dihapus.
@@ -141,9 +185,9 @@ yang masih memiliki backend aslinya.
 ### Departemen dan jabatan operator
 
 Master operator sekarang memiliki kolom `departemen` dan `jabatan` pada tabel
-`production_master`. Untuk database lama jalankan `php bin/console.php setup`;
+`production_master`. Untuk database lama jalankan `php private/bin/console.php setup`;
 perintah ini dapat diulang dan mempertahankan data. Jika hosting tidak memiliki
-terminal, jalankan `database/operator-department-migration.sql` sekali melalui
+terminal, jalankan `private/database/operator-department-migration.sql` sekali melalui
 phpMyAdmin sebelum mengunggah kode aplikasi terbaru.
 
 Di **Setting → Data Master → Operator**, isi Departemen `Produksi` dan
@@ -164,12 +208,12 @@ lama tetap dapat diimpor, lalu operator dilengkapi melalui menu Master.
 
 Untuk CSV operator di phpMyAdmin, gunakan daftar kolom
 `category,value,departemen,jabatan` dan lewati header. Contoh tersedia pada
-`database/operator-template.csv`. Kolom `extra` kosong otomatis dibaca sebagai
+`private/database/operator-template.csv`. Kolom `extra` kosong otomatis dibaca sebagai
 objek kosong, sehingga impor juga kompatibel dengan MySQL lokal yang tidak
 mendukung nilai bawaan pada kolom `LONGTEXT`.
 
 Jika Laporan Hasil Pengerjaan dan KPI tampil di lokal tetapi kosong di hosting,
-unggah `app/Http/Controllers/ProductionController.php`, `public/script.js`, dan
+unggah `private/app/Http/Controllers/ProductionController.php`, `public/script.js`, dan
 halaman HTML di `public/` dari versi yang sama. Pertahankan `koneksi.php` dan
 `.env` hosting. API menyediakan `reportEntries` lengkap untuk akun berhak akses
 laporan, termasuk ketika dashboard memakai data yang sama, agar JavaScript lama
@@ -202,7 +246,7 @@ sebagai tabel salinan. Kolom `extra` hanya menyimpan atribut tambahan dari snaps
 yang belum dikenal; data utama memakai kolom tersendiri. Daftar ID foto tetap JSON.
 
 Untuk database versi lama, hentikan server aplikasi sementara, lalu jalankan
-`php bin/console.php setup` sebelum menjalankan kode baru. Setup menyalin isi
+`php private/bin/console.php setup` sebelum menjalankan kode baru. Setup menyalin isi
 `production_records` ke tabel tujuan dalam satu transaksi, mempertahankan urutan
 record, dan menandai migrasi selesai di `production_migrations`. Data lama tidak
 dihapus, tetapi tabel tersebut tidak lagi dibaca/ditulis aplikasi. Jangan gunakan
@@ -215,7 +259,7 @@ tanpa menimpa data; tabel tujuan yang baru dibuat tetap tersedia untuk pemeriksa
 ### Impor master dari CSV (phpMyAdmin)
 
 CSV master hanya membutuhkan `category,value`; kategori yang digunakan adalah
-`operator`, `produk`, dan `botol`. Contoh tersedia di `database/master-template.csv`.
+`operator`, `produk`, dan `botol`. Contoh tersedia di `private/database/master-template.csv`.
 Kategori `karyawan` juga diterima sebagai alias `operator`, termasuk untuk edit
 dan hapus melalui aplikasi. Contoh: `karyawan,ARIK,Produksi,Operator Filling` dengan
 header dan daftar kolom impor `category,value,departemen,jabatan`.
@@ -225,10 +269,10 @@ yang sudah ada karena setup menggunakan `CREATE TABLE IF NOT EXISTS`.
 Gunakan nilai tidak kosong, maksimal 200 karakter, tanpa duplikat kategori/nama.
 Kolom `sequence` otomatis, `record_id` boleh kosong (NULL), dan `extra` kosong
 dibaca sebagai `{}`. Untuk operator sertakan departemen serta jabatan seperti
-contoh `database/operator-template.csv`, atau lengkapi melalui menu Master.
+contoh `private/database/operator-template.csv`, atau lengkapi melalui menu Master.
 
 Untuk database lama, unggah kode aplikasi terbaru dan jalankan
-`database/master-csv-migration.sql` melalui tab SQL phpMyAdmin sebelum impor.
+`private/database/master-csv-migration.sql` melalui tab SQL phpMyAdmin sebelum impor.
 Migrasi ini mempertahankan semua data lama. Untuk database baru gunakan setup biasa.
 
 Pilih tabel `production_master`, buka **Import**, pilih format **CSV**, separator
@@ -243,8 +287,8 @@ Gunakan `tools/export-php.gs` di proyek Apps Script lama untuk menghasilkan
 snapshot JSON. Validasi dahulu, kemudian terapkan ke database produksi kosong:
 
 ```powershell
-php bin/console.php import snapshot.json
-php bin/console.php import snapshot.json --apply
+php private/bin/console.php import snapshot.json
+php private/bin/console.php import snapshot.json --apply
 ```
 
 Tanpa `--apply`, tidak ada data yang disimpan. Impor menolak menimpa record/foto
@@ -259,12 +303,12 @@ login aplikasi. Pesan `Username atau password salah.` berarti akun tidak
 ditemukan, tidak aktif, atau password tidak cocok. Password akun hasil impor
 tidak dipindahkan dari aplikasi lama.
 
-Dari terminal hosting, di root proyek, jalankan `php bin/console.php doctor`
+Dari terminal hosting, di root proyek, jalankan `php private/bin/console.php doctor`
 untuk memeriksa koneksi dan tabel. Untuk akun aktif yang sudah ada, isi sementara
 `USER_PASSWORD` di `.env` dengan password baru sepanjang 12–255 karakter, lalu:
 
 ```sh
-php bin/console.php reset-password admin
+php private/bin/console.php reset-password admin
 ```
 
 Ganti `admin` dengan username akun. Perintah ini mencabut sesi lama dan menghapus
@@ -277,7 +321,7 @@ perintah ini. Jika akun belum ada, gunakan perintah `admin` dengan
 
 Konfigurasi database hosting dapat diisi pada `koneksi.php` di root proyek:
 ubah `host`, `port`, `name`, `user`, dan `password` sesuai akun database hosting.
-`app/Database.php` membaca file ini otomatis. Nilai `DB_*` dari environment
+`private/app/Database.php` membaca file ini otomatis. Nilai `DB_*` dari environment
 atau `.env` tetap diprioritaskan, termasuk password environment yang kosong.
 Simpan `koneksi.php` di luar folder `public/` dan jangan commit password asli.
 
@@ -287,7 +331,7 @@ terminal untuk koneksi pengujian; environment mengalahkan konfigurasi `.env`.
 
 ```powershell
 $env:DB_NAME = 'newproduksi_test'
-php bin/console.php setup
+php private/bin/console.php setup
 php tests/native.php
 ```
 

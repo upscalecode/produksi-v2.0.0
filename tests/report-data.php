@@ -1,5 +1,5 @@
 <?php
-require dirname(__DIR__).'/bootstrap.php';
+require dirname(__DIR__).'/private/bootstrap.php';
 
 use App\Services\{Accounts, ApdService, Permissions, PressBalance, ProductionService, Records};
 use App\Http\Controllers\ProductionController;

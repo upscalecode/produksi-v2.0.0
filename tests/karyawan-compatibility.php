@@ -24,7 +24,7 @@ namespace App\Services {
     class ApdService { public const WEIGHTS = []; }
 }
 namespace {
-    require dirname(__DIR__).'/app/Services/Records.php';
+    require dirname(__DIR__).'/private/app/Services/Records.php';
     use App\Database;
     use App\Services\Records;
     function expect(bool $condition, string $message): void {

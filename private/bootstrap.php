@@ -9,7 +9,7 @@ spl_autoload_register(static function (string $class): void {
 });
 $envFile = null;
 // Support both a project outside the web root and a project in public_html.
-foreach ([__DIR__.'/.env', dirname(__DIR__).'/.env'] as $candidate) {
+foreach ([__DIR__.'/.env', dirname(__DIR__).'/.env', dirname(__DIR__, 2).'/.env'] as $candidate) {
     if (is_file($candidate)) {
         $envFile = $candidate;
         break;

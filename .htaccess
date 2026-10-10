@@ -4,6 +4,8 @@ RewriteEngine On
 
 # Deny hidden files before forwarding requests to the public directory.
 RewriteRule (^|/)\. - [F,L]
+RewriteRule ^(?:private|app|bin|database|storage|tests|tools|deployment)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:bootstrap|koneksi|router)\.php$ - [F,L,NC]
 
 # Open login from the domain root and correct the mistaken hosting-folder URL.
 RewriteRule ^(?:public_html/?)?$ /login.html [R=302,L]
